@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: jiji-memorization-backend
+  
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:jiji_memorization}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+# JWT配置
+jwt:
+  secret: jiji-memorization-secret-key-2024-very-long-and-secure-for-hs512-algorithm-with-sufficient-length
+  expiration: 86400000 # 24小时，单位：毫秒
+
+logging:
+  level:
+    com.jiji: DEBUG
+    org.springframework.web: DEBUG
+
