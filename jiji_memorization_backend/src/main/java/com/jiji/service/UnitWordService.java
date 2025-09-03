@@ -133,7 +133,7 @@ public class UnitWordService {
     
     // 根据单元ID获取关联单词总数
     public long getUnitWordCountByUnitId(Long unitId) {
-        return unitWordRepository.findByUnitId(unitId).size();
+        return unitWordRepository.countByUnitId(unitId);
     }
     
     // 根据单词ID获取关联单元总数

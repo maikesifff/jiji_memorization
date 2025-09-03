@@ -24,6 +24,9 @@
             <th>所属单元</th>
             <th>所属教材</th>
             <th>错误次数</th>
+            <th>正确次数</th>
+            <th>正确率</th>
+            <th>最后答题状态</th>
             <th>最后错误时间</th>
             <th>创建时间</th>
             <th>操作</th>
@@ -39,6 +42,21 @@
             <td>
               <span class="error-count" :class="getErrorCountClass(record.errorCount)">
                 {{ record.errorCount }}
+              </span>
+            </td>
+            <td>
+              <span class="correct-count" :class="getCorrectCountClass(record.correctCount)">
+                {{ record.correctCount }}
+              </span>
+            </td>
+            <td>
+              <span class="accuracy-rate" :class="getAccuracyClass(record)">
+                {{ getAccuracyRate(record) }}%
+              </span>
+            </td>
+            <td>
+              <span class="last-answer-status" :class="getLastAnswerStatusClass(record.lastAnswerCorrect)">
+                {{ getLastAnswerStatusText(record.lastAnswerCorrect) }}
               </span>
             </td>
             <td>{{ formatDate(record.lastErrorAt) || '-' }}</td>
@@ -89,6 +107,24 @@
             <label>错误次数：</label>
             <span class="error-count" :class="getErrorCountClass(selectedRecord?.errorCount)">
               {{ selectedRecord?.errorCount }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>正确次数：</label>
+            <span class="correct-count" :class="getCorrectCountClass(selectedRecord?.correctCount)">
+              {{ selectedRecord?.correctCount }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>正确率：</label>
+            <span class="accuracy-rate" :class="getAccuracyClass(selectedRecord)">
+              {{ getAccuracyRate(selectedRecord) }}%
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>最后答题状态：</label>
+            <span class="last-answer-status" :class="getLastAnswerStatusClass(selectedRecord?.lastAnswerCorrect)">
+              {{ getLastAnswerStatusText(selectedRecord?.lastAnswerCorrect) }}
             </span>
           </div>
           <div class="detail-item">
@@ -266,6 +302,42 @@ export default {
       if (count <= 7) return 'error-medium'
       return 'error-high'
     }
+
+    // 获取正确次数样式类
+    const getCorrectCountClass = (count) => {
+      if (count === 0) return 'correct-none'
+      if (count <= 3) return 'correct-low'
+      if (count <= 7) return 'correct-medium'
+      return 'correct-high'
+    }
+
+    // 计算正确率
+    const getAccuracyRate = (record) => {
+      const total = (record.correctCount || 0) + (record.errorCount || 0)
+      if (total === 0) return 0
+      return Math.round(((record.correctCount || 0) / total) * 100)
+    }
+
+    // 获取正确率样式类
+    const getAccuracyClass = (record) => {
+      const rate = getAccuracyRate(record)
+      if (rate === 0) return 'accuracy-none'
+      if (rate < 50) return 'accuracy-low'
+      if (rate < 80) return 'accuracy-medium'
+      return 'accuracy-high'
+    }
+
+    // 获取最后答题状态文本
+    const getLastAnswerStatusText = (lastAnswerCorrect) => {
+      if (lastAnswerCorrect === null || lastAnswerCorrect === undefined) return '未答题'
+      return lastAnswerCorrect ? '答对' : '答错'
+    }
+
+    // 获取最后答题状态样式类
+    const getLastAnswerStatusClass = (lastAnswerCorrect) => {
+      if (lastAnswerCorrect === null || lastAnswerCorrect === undefined) return 'status-none'
+      return lastAnswerCorrect ? 'status-correct' : 'status-wrong'
+    }
     
     // 查看详情
     const viewDetails = (record) => {
@@ -354,6 +426,11 @@ export default {
       getUnitName,
       getTextbookName,
       getErrorCountClass,
+      getCorrectCountClass,
+      getAccuracyRate,
+      getAccuracyClass,
+      getLastAnswerStatusText,
+      getLastAnswerStatusClass,
       formatDate
     }
   }
@@ -451,6 +528,91 @@ export default {
 .error-high {
   background: #721c24;
   color: white;
+}
+
+.correct-count {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  min-width: 30px;
+}
+
+.correct-none {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.correct-low {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.correct-medium {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.correct-high {
+  background: #d4edda;
+  color: #155724;
+}
+
+.accuracy-rate {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  min-width: 40px;
+}
+
+.accuracy-none {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.accuracy-low {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.accuracy-medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.accuracy-high {
+  background: #d4edda;
+  color: #155724;
+}
+
+.last-answer-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  min-width: 50px;
+}
+
+.status-none {
+  background: #e2e3e5;
+  color: #6c757d;
+}
+
+.status-correct {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-wrong {
+  background: #f8d7da;
+  color: #721c24;
 }
 
 .view-btn,

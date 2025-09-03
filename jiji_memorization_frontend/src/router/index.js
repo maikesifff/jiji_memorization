@@ -4,6 +4,7 @@ import About from '@/views/About.vue'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
 import Admin from '@/views/Admin.vue'
+import BrowseMode from '@/views/BrowseMode.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [
@@ -35,6 +36,12 @@ const routes = [
     path: '/about',
     name: 'About',
     component: About,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/browse/:unitId',
+    name: 'BrowseMode',
+    component: BrowseMode,
     meta: { requiresAuth: true }
   }
 ]

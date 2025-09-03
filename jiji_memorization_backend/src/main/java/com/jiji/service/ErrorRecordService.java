@@ -34,6 +34,11 @@ public class ErrorRecordService {
     public List<ErrorRecord> getErrorRecordsByUnitWordId(Long unitWordId) {
         return errorRecordRepository.findByUnitWordId(unitWordId);
     }
+
+    // 根据用户ID和单元ID获取错误记录
+    public List<ErrorRecord> getErrorRecordsByUserIdAndUnitId(Long userId, Long unitId) {
+        return errorRecordRepository.findByUserIdAndUnitId(userId, unitId);
+    }
     
     // 根据用户ID和单元单词ID获取错误记录
     public Optional<ErrorRecord> getErrorRecordByUserIdAndUnitWordId(Long userId, Long unitWordId) {
@@ -55,6 +60,8 @@ public class ErrorRecordService {
         errorRecord.setUserId(errorRecordDetails.getUserId());
         errorRecord.setUnitWordId(errorRecordDetails.getUnitWordId());
         errorRecord.setErrorCount(errorRecordDetails.getErrorCount());
+        errorRecord.setCorrectCount(errorRecordDetails.getCorrectCount());
+        errorRecord.setLastAnswerCorrect(errorRecordDetails.getLastAnswerCorrect());
         errorRecord.setLastErrorAt(errorRecordDetails.getLastErrorAt());
         errorRecord.setUpdatedAt(LocalDateTime.now());
         
@@ -104,6 +111,7 @@ public class ErrorRecordService {
             ErrorRecord record = existingRecord.get();
             record.setErrorCount(record.getErrorCount() + 1);
             record.setLastErrorAt(LocalDateTime.now());
+            record.setLastAnswerCorrect(false);
             record.setUpdatedAt(LocalDateTime.now());
             return errorRecordRepository.save(record);
         } else {
@@ -111,10 +119,44 @@ public class ErrorRecordService {
             newRecord.setUserId(userId);
             newRecord.setUnitWordId(unitWordId);
             newRecord.setErrorCount(1);
+            newRecord.setCorrectCount(0);
+            newRecord.setLastAnswerCorrect(false);
             newRecord.setLastErrorAt(LocalDateTime.now());
             newRecord.setCreatedAt(LocalDateTime.now());
             newRecord.setUpdatedAt(LocalDateTime.now());
             return errorRecordRepository.save(newRecord);
+        }
+    }
+
+    // 增加正确次数
+    public ErrorRecord incrementCorrectCount(Long userId, Long unitWordId) {
+        Optional<ErrorRecord> existingRecord = errorRecordRepository.findByUserIdAndUnitWordId(userId, unitWordId);
+        
+        if (existingRecord.isPresent()) {
+            ErrorRecord record = existingRecord.get();
+            record.setCorrectCount(record.getCorrectCount() + 1);
+            record.setLastAnswerCorrect(true);
+            record.setUpdatedAt(LocalDateTime.now());
+            return errorRecordRepository.save(record);
+        } else {
+            ErrorRecord newRecord = new ErrorRecord();
+            newRecord.setUserId(userId);
+            newRecord.setUnitWordId(unitWordId);
+            newRecord.setErrorCount(0);
+            newRecord.setCorrectCount(1);
+            newRecord.setLastAnswerCorrect(true);
+            newRecord.setCreatedAt(LocalDateTime.now());
+            newRecord.setUpdatedAt(LocalDateTime.now());
+            return errorRecordRepository.save(newRecord);
+        }
+    }
+
+    // 记录答题结果（统一方法）
+    public ErrorRecord recordAnswer(Long userId, Long unitWordId, boolean isCorrect) {
+        if (isCorrect) {
+            return incrementCorrectCount(userId, unitWordId);
+        } else {
+            return incrementErrorCount(userId, unitWordId);
         }
     }
 }

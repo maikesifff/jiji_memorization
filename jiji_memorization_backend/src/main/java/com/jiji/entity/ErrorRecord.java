@@ -27,6 +27,12 @@ public class ErrorRecord {
     @Column(name = "error_count", nullable = false, columnDefinition = "INT NOT NULL DEFAULT 0")
     private Integer errorCount = 0;
 
+    @Column(name = "correct_count", nullable = false, columnDefinition = "INT NOT NULL DEFAULT 0")
+    private Integer correctCount = 0;
+
+    @Column(name = "last_answer_correct")
+    private Boolean lastAnswerCorrect;
+
     @Column(name = "last_error_at")
     private LocalDateTime lastErrorAt;
 
@@ -42,6 +48,9 @@ public class ErrorRecord {
         this.updatedAt = LocalDateTime.now();
         if (this.errorCount == null) {
             this.errorCount = 0;
+        }
+        if (this.correctCount == null) {
+            this.correctCount = 0;
         }
     }
 
@@ -61,6 +70,12 @@ public class ErrorRecord {
 
     public Integer getErrorCount() { return errorCount; }
     public void setErrorCount(Integer errorCount) { this.errorCount = errorCount; }
+
+    public Integer getCorrectCount() { return correctCount; }
+    public void setCorrectCount(Integer correctCount) { this.correctCount = correctCount; }
+
+    public Boolean getLastAnswerCorrect() { return lastAnswerCorrect; }
+    public void setLastAnswerCorrect(Boolean lastAnswerCorrect) { this.lastAnswerCorrect = lastAnswerCorrect; }
 
     public LocalDateTime getLastErrorAt() { return lastErrorAt; }
     public void setLastErrorAt(LocalDateTime lastErrorAt) { this.lastErrorAt = lastErrorAt; }

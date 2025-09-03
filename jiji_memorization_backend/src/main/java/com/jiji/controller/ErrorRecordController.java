@@ -44,6 +44,14 @@ public class ErrorRecordController {
         List<ErrorRecord> errorRecords = errorRecordService.getErrorRecordsByUnitWordId(unitWordId);
         return ResponseEntity.ok(errorRecords);
     }
+
+    // 获取用户在指定单元的学习记录
+    @GetMapping("/user/{userId}/unit-word/unit/{unitId}")
+    public ResponseEntity<List<ErrorRecord>> getErrorRecordsByUserIdAndUnitId(
+            @PathVariable Long userId, @PathVariable Long unitId) {
+        List<ErrorRecord> errorRecords = errorRecordService.getErrorRecordsByUserIdAndUnitId(userId, unitId);
+        return ResponseEntity.ok(errorRecords);
+    }
     
     // 根据用户ID和单元单词ID获取错误记录
     @GetMapping("/user/{userId}/unit-word/{unitWordId}")
@@ -115,6 +123,30 @@ public class ErrorRecordController {
             @RequestParam Long userId, @RequestParam Long unitWordId) {
         try {
             ErrorRecord errorRecord = errorRecordService.incrementErrorCount(userId, unitWordId);
+            return ResponseEntity.ok(errorRecord);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // 增加正确次数
+    @PostMapping("/increment-correct")
+    public ResponseEntity<ErrorRecord> incrementCorrectCount(
+            @RequestParam Long userId, @RequestParam Long unitWordId) {
+        try {
+            ErrorRecord errorRecord = errorRecordService.incrementCorrectCount(userId, unitWordId);
+            return ResponseEntity.ok(errorRecord);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // 记录答题结果（统一方法）
+    @PostMapping("/record-answer")
+    public ResponseEntity<ErrorRecord> recordAnswer(
+            @RequestParam Long userId, @RequestParam Long unitWordId, @RequestParam boolean isCorrect) {
+        try {
+            ErrorRecord errorRecord = errorRecordService.recordAnswer(userId, unitWordId, isCorrect);
             return ResponseEntity.ok(errorRecord);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

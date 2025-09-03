@@ -12,7 +12,7 @@
     <artifactId>jiji-memorization-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>jiji-memorization-backend</name>
-    <description>记忆项目后端服务</description>
+    <description>吉吉记单词后端服务</description>
     <properties>
         <java.version>17</java.version>
     </properties>

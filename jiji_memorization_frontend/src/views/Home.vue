@@ -35,11 +35,10 @@
           v-for="unit in units" 
           :key="unit.id" 
           class="unit-card"
-          @click="selectUnit(unit)"
         >
           <div class="unit-header">
             <h3>{{ unit.name }}</h3>
-            <div class="unit-status" :class="getUnitStatusClass(unit)">
+            <div v-if="getUnitStatusText(unit)" class="unit-status" :class="getUnitStatusClass(unit)">
               {{ getUnitStatusText(unit) }}
             </div>
           </div>
@@ -59,15 +58,33 @@
           <div class="unit-stats">
             <div class="stat-item">
               <span class="stat-label">总单词</span>
-              <span class="stat-value">{{ unit.totalWords }}</span>
+              <span class="stat-value">{{ unit.totalWords || 0 }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">已学习</span>
-              <span class="stat-value">{{ unit.learnedWords }}</span>
+              <span class="stat-value">{{ unit.learnedWords || 0 }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">进度</span>
               <span class="stat-value">{{ getUnitProgress(unit) }}%</span>
+            </div>
+          </div>
+          
+          <!-- 学习模式选择 -->
+          <div class="learning-modes">
+            <div class="mode-section">
+              <h4>浏览模式</h4>
+              <p>浏览和查看单元中的单词</p>
+              <button @click="startBrowseMode(unit)" class="mode-btn browse-btn">
+                开始浏览
+              </button>
+            </div>
+            <div class="mode-section">
+              <h4>评测模式</h4>
+              <p>测试单词掌握程度</p>
+              <button @click="startTestMode(unit)" class="mode-btn test-btn">
+                开始评测
+              </button>
             </div>
           </div>
         </div>
@@ -108,6 +125,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import TextbookSelector from '@/components/TextbookSelector.vue'
 import api from '@/utils/axios'
@@ -118,6 +136,7 @@ export default {
     TextbookSelector
   },
   setup() {
+    const router = useRouter()
     const authStore = useAuthStore()
     const showTextbookSelector = ref(false)
     const currentTextbook = ref(null)
@@ -130,11 +149,11 @@ export default {
       units.value.filter(unit => getUnitProgress(unit) === 100).length
     )
     const totalWords = computed(() => 
-      units.value.reduce((sum, unit) => sum + unit.totalWords, 0)
+      units.value.reduce((sum, unit) => sum + (unit.totalWords || 0), 0)
     )
     const overallProgress = computed(() => {
       if (totalWords.value === 0) return 0
-      const learnedWords = units.value.reduce((sum, unit) => sum + unit.learnedWords, 0)
+      const learnedWords = units.value.reduce((sum, unit) => sum + (unit.learnedWords || 0), 0)
       return Math.round((learnedWords / totalWords.value) * 100)
     })
     
@@ -150,10 +169,27 @@ export default {
         // 获取每个单元的进度信息
         const unitsWithProgress = await Promise.all(
           unitsData.map(async (unit) => {
-            const progressResponse = await api.get(`/api/units/${unit.id}/progress/${authStore.currentUser.id}`)
-            return {
-              ...unit,
-              ...progressResponse.data
+            try {
+              // 获取单元的总单词数（使用计数接口）
+              const countResponse = await api.get(`/api/unit-words/unit/${unit.id}/count`)
+              const totalWords = countResponse.data
+              console.log(`Unit ${unit.id} (${unit.name}): totalWords = ${totalWords}`)
+              
+              // 获取用户在该单元的学习记录
+              const userProgress = await getUserUnitProgress(unit.id, totalWords)
+              
+              return {
+                ...unit,
+                totalWords: totalWords,
+                learnedWords: userProgress.learnedWords
+              }
+            } catch (error) {
+              console.error(`Failed to get progress for unit ${unit.id}:`, error)
+              return {
+                ...unit,
+                totalWords: 0,
+                learnedWords: 0
+              }
             }
           })
         )
@@ -165,33 +201,73 @@ export default {
         loading.value = false
       }
     }
+
+    // 获取用户在指定单元的学习进度
+    const getUserUnitProgress = async (unitId, totalWords) => {
+      try {
+        // 从错误记录表查询该用户在该单元的学习数据
+        const response = await api.get(`/api/error-records/user/${authStore.currentUser.id}/unit-word/unit/${unitId}`)
+        const records = response.data
+        
+        // 统计已学习的单词数（答对次数大于等于1视为已完成）
+        const learnedWords = records.filter(record => record.correctCount >= 1).length
+        
+        return {
+          learnedWords,
+          totalWords
+        }
+      } catch (error) {
+        console.error('Failed to get user progress:', error)
+        return {
+          learnedWords: 0,
+          totalWords
+        }
+      }
+    }
     
     // 处理教材选择
     const handleTextbookSelected = (selection) => {
       currentTextbook.value = selection
       showTextbookSelector.value = false
+      
+      // 保存到 localStorage
+      localStorage.setItem('selectedTextbook', JSON.stringify(selection))
+      
       fetchUnits()
     }
     
-    // 选择单元
-    const selectUnit = (unit) => {
-      console.log('Selected unit:', unit)
-      // TODO: 跳转到单元学习页面
+    // 开始浏览模式
+    const startBrowseMode = (unit) => {
+      console.log('Starting browse mode for unit:', unit)
+      // 跳转到浏览模式页面
+      router.push(`/browse/${unit.id}`)
+    }
+
+    // 开始评测模式
+    const startTestMode = (unit) => {
+      console.log('Starting test mode for unit:', unit)
+      // TODO: 跳转到评测模式页面
     }
     
     // 获取单元进度
     const getUnitProgress = (unit) => {
-      if (unit.totalWords === 0) return 0
+      if (!unit.totalWords || unit.totalWords === 0) return 0
+      if (!unit.learnedWords) return 0
       return Math.round((unit.learnedWords / unit.totalWords) * 100)
     }
     
     // 获取单元进度文本
     const getUnitProgressText = (unit) => {
-      return `${unit.learnedWords}/${unit.totalWords}`
+      const total = unit.totalWords || 0
+      const learned = unit.learnedWords || 0
+      return `${learned}/${total}`
     }
     
     // 获取单元状态
     const getUnitStatusClass = (unit) => {
+      // 如果没有学习记录，不显示状态
+      if (unit.learnedWords === 0 && unit.totalWords === 0) return ''
+      
       const progress = getUnitProgress(unit)
       if (progress === 0) return 'not-started'
       if (progress === 100) return 'completed'
@@ -200,6 +276,9 @@ export default {
     
     // 获取单元状态文本
     const getUnitStatusText = (unit) => {
+      // 如果没有学习记录，不显示状态
+      if (unit.learnedWords === 0 && unit.totalWords === 0) return ''
+      
       const progress = getUnitProgress(unit)
       if (progress === 0) return '未开始'
       if (progress === 100) return '已完成'
@@ -207,7 +286,17 @@ export default {
     }
     
     onMounted(() => {
-      // TODO: 从localStorage或用户设置中恢复上次选择的教材
+      // 从 localStorage 读取上次选择的教材
+      const savedTextbook = localStorage.getItem('selectedTextbook')
+      if (savedTextbook) {
+        try {
+          currentTextbook.value = JSON.parse(savedTextbook)
+          fetchUnits()
+        } catch (error) {
+          console.error('Failed to parse saved textbook:', error)
+          localStorage.removeItem('selectedTextbook')
+        }
+      }
     })
     
     return {
@@ -221,7 +310,8 @@ export default {
       totalWords,
       overallProgress,
       handleTextbookSelected,
-      selectUnit,
+      startBrowseMode,
+      startTestMode,
       getUnitProgress,
       getUnitProgressText,
       getUnitStatusClass,
@@ -472,5 +562,62 @@ export default {
   color: #666;
   font-weight: 500;
 }
+
+.learning-modes {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e5e9;
+}
+
+.mode-section {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+}
+
+.mode-section h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.mode-section p {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.mode-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.browse-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.browse-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.test-btn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.test-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+}
 </style>
+
 
