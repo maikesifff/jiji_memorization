@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import Home from '@/views/Home.vue'
 import About from '@/views/About.vue'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
+import Admin from '@/views/Admin.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const routes = [
   {
@@ -16,6 +17,12 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: Register,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
     meta: { requiresAuth: false }
   },
   {
@@ -37,19 +44,12 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   
-  // 检查是否需要认证
-  if (to.meta.requiresAuth) {
-    // 检查是否已登录
-    if (authStore.isAuthenticated && !authStore.isTokenExpired()) {
-      next()
-    } else {
-      // 未登录，跳转到登录页
-      next('/login')
-    }
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    // 需要认证但未登录，跳转到登录页
+    next('/login')
   } else {
     // 不需要认证的页面
     if ((to.path === '/login' || to.path === '/register') && authStore.isAuthenticated) {

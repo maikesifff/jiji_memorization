@@ -4,6 +4,8 @@ import com.jiji.entity.User;
 import com.jiji.entity.UserStatus;
 import com.jiji.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +64,18 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<User> findAllActiveUsers() {
         return userRepository.findByStatus(UserStatus.ACTIVE);
+    }
+    
+    // 分页获取所有活跃用户
+    @Transactional(readOnly = true)
+    public Page<User> getAllActiveUsersWithPagination(Pageable pageable) {
+        return userRepository.findByStatus(UserStatus.ACTIVE, pageable);
+    }
+    
+    // 分页搜索用户
+    @Transactional(readOnly = true)
+    public Page<User> searchUsersWithPagination(String keyword, Pageable pageable) {
+        return userRepository.searchUsers(keyword, pageable);
     }
     
     // 更新用户信息

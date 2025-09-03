@@ -3,7 +3,12 @@ package com.jiji.controller;
 import com.jiji.entity.User;
 import com.jiji.entity.UserStatus;
 import com.jiji.service.UserService;
+import com.jiji.util.PageResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,32 +60,46 @@ public class UserController {
         }
     }
     
-    // 获取所有活跃用户
+    // 分页获取所有活跃用户
     @GetMapping
-    public ResponseEntity<?> getAllActiveUsers() {
+    public ResponseEntity<?> getAllActiveUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        
         try {
-            List<User> users = userService.findAllActiveUsers();
+            Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? 
+                Sort.Direction.DESC : Sort.Direction.ASC;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "获取用户列表成功");
-            response.put("users", users.stream().map(user -> Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "email", user.getEmail(),
-                "nickname", user.getNickname(),
-                "status", user.getStatus(),
-                "createdAt", user.getCreatedAt()
-            )).toList());
-            response.put("count", users.size());
+            Page<User> userPage = userService.getAllActiveUsersWithPagination(pageable);
             
-            return ResponseEntity.ok(response);
-            
+            return PageResponseUtil.createPageResponse(userPage, "获取用户列表成功");
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "error");
-            response.put("message", "获取用户列表失败: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
+            return PageResponseUtil.createErrorResponse("获取用户列表失败: " + e.getMessage());
+        }
+    }
+    
+    // 分页搜索用户
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsers(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        
+        try {
+            Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? 
+                Sort.Direction.DESC : Sort.Direction.ASC;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+            
+            Page<User> userPage = userService.searchUsersWithPagination(keyword, pageable);
+            
+            return PageResponseUtil.createPageResponse(userPage, "搜索用户成功");
+        } catch (Exception e) {
+            return PageResponseUtil.createErrorResponse("搜索用户失败: " + e.getMessage());
         }
     }
     

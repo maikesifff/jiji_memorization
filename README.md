@@ -1,4 +1,4 @@
-# 记忆项目 (Jiji Memorization)
+# 吉吉记单词 (Jiji Memorization Word)
 
 这是一个基于Spring Boot和Vue3的前后端分离项目。
 
@@ -11,6 +11,9 @@ jiji_memorization/
 │   │   ├── main/
 │   │   │   ├── java/com/jiji/
 │   │   │   │   ├── controller/   # 控制器层
+│   │   │   │   ├── service/      # 服务层
+│   │   │   │   ├── repository/   # 数据访问层
+│   │   │   │   ├── entity/       # 实体类
 │   │   │   │   ├── config/       # 配置类
 │   │   │   │   └── JijiMemorizationBackendApplication.java
 │   │   │   └── resources/
@@ -22,7 +25,9 @@ jiji_memorization/
 │   ├── src/
 │   │   ├── components/           # Vue组件
 │   │   ├── views/                # 页面组件
+│   │   ├── stores/               # Pinia状态管理
 │   │   ├── router/               # 路由配置
+│   │   ├── utils/                # 工具函数
 │   │   ├── App.vue
 │   │   └── main.js
 │   ├── package.json
@@ -43,9 +48,11 @@ jiji_memorization/
 ### 后端
 - Spring Boot 3.2.0
 - Spring Data JPA
+- Spring Security Crypto
 - MySQL 8.0
 - Maven 3.9.6
 - Java 17
+- JWT (JSON Web Tokens)
 
 ### 前端
 - Vue 3.3.8
@@ -194,6 +201,21 @@ npm run dev
 ### 数据库接口
 - `GET /api/database/test` - 数据库连接测试接口
 
+### 用户认证接口
+- `POST /api/auth/login` - 用户登录
+- `POST /api/auth/register` - 用户注册
+- `POST /api/auth/validate` - 验证Token
+
+### 教材管理接口
+- `GET /api/grades` - 获取年级列表
+- `GET /api/textbooks` - 获取教材列表
+- `GET /api/textbooks/grade/{gradeId}` - 根据年级获取教材
+
+### 单元管理接口
+- `GET /api/units` - 获取单元列表
+- `GET /api/units/textbook/{textbookId}` - 根据教材获取单元
+- `GET /api/units/{unitId}/progress/{userId}` - 获取单元学习进度
+
 ## 开发说明
 
 ### 后端开发
@@ -202,6 +224,8 @@ npm run dev
 - 使用JPA进行数据持久化
 - 配置了CORS跨域支持
 - 使用Maven进行依赖管理
+- 集成JWT认证机制
+- 使用BCrypt进行密码加密
 
 ### 前端开发
 - 使用Vue 3 Composition API
@@ -209,6 +233,8 @@ npm run dev
 - 使用Pinia进行状态管理
 - 配置了Axios进行HTTP请求
 - 使用Vite作为构建工具
+- 实现了用户认证和路由守卫
+- 支持Token持久化存储
 
 ### 数据库配置
 - 数据库类型：MySQL 8.0
@@ -267,6 +293,11 @@ npm run dev
 - ✅ 数据库集成
 - ✅ 环境配置脚本
 - ✅ 服务管理脚本
+- ✅ 用户认证系统
+- ✅ JWT Token管理
+- ✅ 教材选择功能
+- ✅ 单元进度跟踪
+- ✅ 学习记录管理
 
 ## 贡献指南
 

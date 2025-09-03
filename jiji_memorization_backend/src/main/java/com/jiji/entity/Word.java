@@ -14,8 +14,11 @@ public class Word {
     @Column(name = "word_text", nullable = false, length = 100)
     private String wordText;
 
-    @Column(name = "phonetic", length = 100)
-    private String phonetic; // 音标
+    @Column(name = "american_phonetic", length = 100)
+    private String americanPhonetic; // 美音音标
+
+    @Column(name = "british_phonetic", length = 100)
+    private String britishPhonetic; // 英音音标
 
     @Column(name = "pron_uk", columnDefinition = "TEXT")
     private String pronUk; // 英音发音（编码后的语音文件）
@@ -46,8 +49,11 @@ public class Word {
     public String getWordText() { return wordText; }
     public void setWordText(String wordText) { this.wordText = wordText; }
 
-    public String getPhonetic() { return phonetic; }
-    public void setPhonetic(String phonetic) { this.phonetic = phonetic; }
+    public String getAmericanPhonetic() { return americanPhonetic; }
+    public void setAmericanPhonetic(String americanPhonetic) { this.americanPhonetic = americanPhonetic; }
+
+    public String getBritishPhonetic() { return britishPhonetic; }
+    public void setBritishPhonetic(String britishPhonetic) { this.britishPhonetic = britishPhonetic; }
 
     public String getPronUk() { return pronUk; }
     public void setPronUk(String pronUk) { this.pronUk = pronUk; }

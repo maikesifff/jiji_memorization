@@ -1,86 +1,114 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import api from '@/utils/axios'
 
 export const useAuthStore = defineStore('auth', () => {
-  // 状态
   const token = ref(localStorage.getItem('token') || '')
-  const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
+  const currentUser = ref(JSON.parse(localStorage.getItem('user') || 'null'))
   
   // 计算属性
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const currentUser = computed(() => user.value)
+  const isAuthenticated = computed(() => !!token.value && !!currentUser.value)
   
-  // 方法
+  // 设置token
   const setToken = (newToken) => {
     token.value = newToken
     localStorage.setItem('token', newToken)
   }
   
-  const setUser = (newUser) => {
-    user.value = newUser
-    localStorage.setItem('user', JSON.stringify(newUser))
+  // 设置用户信息
+  const setUser = (user) => {
+    currentUser.value = user
+    localStorage.setItem('user', JSON.stringify(user))
   }
   
-  const login = (newToken, newUser) => {
-    setToken(newToken)
-    setUser(newUser)
+  // 登录
+  const login = async (username, password) => {
+    try {
+      const response = await api.post('/api/auth/login', { username, password })
+      if (response.data.status === 'success') {
+        setToken(response.data.token)
+        setUser(response.data.user)
+        return { success: true }
+      } else {
+        return { success: false, message: response.data.message }
+      }
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || '登录失败' }
+    }
   }
   
+  // 注册
+  const register = async (username, email, password) => {
+    try {
+      const response = await api.post('/api/auth/register', { username, email, password })
+      if (response.data.status === 'success') {
+        setToken(response.data.token)
+        setUser(response.data.user)
+        return { success: true }
+      } else {
+        return { success: false, message: response.data.message }
+      }
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || '注册失败' }
+    }
+  }
+  
+  // 登出
   const logout = () => {
     token.value = ''
-    user.value = null
+    currentUser.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('user')
   }
   
-  const clearAuth = () => {
-    logout()
+  // 检查自动登录
+  const checkAutoLogin = async () => {
+    if (token.value && currentUser.value) {
+      try {
+        const response = await api.post('/api/auth/validate', {}, {
+          headers: { Authorization: `Bearer ${token.value}` }
+        })
+        
+        if (response.data.status === 'success' && response.data.valid) {
+          // Token有效，保持登录状态
+          return true
+        } else {
+          // Token无效，清除登录状态
+          logout()
+          return false
+        }
+      } catch (error) {
+        // 验证失败，清除登录状态
+        logout()
+        return false
+      }
+    }
+    return false
   }
   
-  // 检查token是否过期（这里可以添加JWT解析逻辑）
+  // 检查Token是否过期
   const isTokenExpired = () => {
     if (!token.value) return true
     
     try {
-      // 简单的token过期检查，实际项目中应该解析JWT
-      // 这里假设token包含过期时间信息
-      return false
+      const payload = JSON.parse(atob(token.value.split('.')[1]))
+      const currentTime = Date.now() / 1000
+      return payload.exp < currentTime
     } catch (error) {
-      console.error('Token validation error:', error)
       return true
     }
-  }
-  
-  // 自动登录检查
-  const checkAutoLogin = () => {
-    if (token.value && user.value && !isTokenExpired()) {
-      return true
-    }
-    
-    // 如果token无效，清除认证信息
-    if (isTokenExpired()) {
-      clearAuth()
-    }
-    
-    return false
   }
   
   return {
-    // 状态
     token,
-    user,
-    
-    // 计算属性
-    isAuthenticated,
     currentUser,
-    
-    // 方法
+    isAuthenticated,
     setToken,
     setUser,
     login,
+    register,
     logout,
-    clearAuth,
-    isTokenExpired,
-    checkAutoLogin
+    checkAutoLogin,
+    isTokenExpired
   }
 })

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ErrorRecordRepository extends JpaRepository<ErrorRecord, Long> {
@@ -18,4 +19,7 @@ public interface ErrorRecordRepository extends JpaRepository<ErrorRecord, Long> 
     List<ErrorRecord> findByUserId(Long userId);
     
     List<ErrorRecord> findByUnitWordId(Long unitWordId);
+    
+    // 根据用户ID和单元单词ID查找错误记录
+    Optional<ErrorRecord> findByUserIdAndUnitWordId(Long userId, Long unitWordId);
 }

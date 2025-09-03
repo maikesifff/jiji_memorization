@@ -133,6 +133,13 @@ public class User {
         this.lastLoginAt = lastLoginAt;
     }
     
+    // 创建时间的预创建方法
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+    
     // 更新时间的预更新方法
     @PreUpdate
     public void preUpdate() {
