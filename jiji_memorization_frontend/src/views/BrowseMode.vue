@@ -409,7 +409,7 @@ export default {
            }
          })
          
-         console.log(`Playing ${type} audio for word: ${word.word}`)
+       console.log(`Playing ${type} audio for word: ${word.word}`)
        } catch (error) {
          console.error('Error creating audio:', error)
        }
@@ -449,7 +449,7 @@ export default {
            }
          })
          
-         console.log(`Playing phrase audio: ${phraseText}`)
+       console.log(`Playing phrase audio: ${phraseText}`)
        } catch (error) {
          console.error('Error creating phrase audio:', error)
        }
@@ -489,7 +489,7 @@ export default {
            }
          })
          
-         console.log(`Playing sentence audio: ${sentenceText}`)
+       console.log(`Playing sentence audio: ${sentenceText}`)
        } catch (error) {
          console.error('Error creating sentence audio:', error)
        }
