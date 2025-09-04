@@ -30,7 +30,7 @@ public interface UnitWordRepository extends JpaRepository<UnitWord, Long> {
     Long countByUnitId(@Param("unitId") Long unitId);
     
     // 获取所有单元单词关联（包含单元、教材、单词信息）
-    @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, COALESCE(w.americanPhonetic, w.britishPhonetic), uw.createdAt) " +
+    @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, w.americanPhonetic, w.britishPhonetic, uw.createdAt) " +
            "FROM UnitWord uw " +
            "JOIN Unit u ON uw.unitId = u.id " +
            "JOIN Word w ON uw.wordId = w.id " +
@@ -38,7 +38,7 @@ public interface UnitWordRepository extends JpaRepository<UnitWord, Long> {
     Page<UnitWordDTO> findAllUnitWordsWithDetails(Pageable pageable);
     
     // 根据单元ID获取单元单词关联（包含单元、教材、单词信息）
-    @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, COALESCE(w.americanPhonetic, w.britishPhonetic), uw.createdAt) " +
+    @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, w.americanPhonetic, w.britishPhonetic, uw.createdAt) " +
            "FROM UnitWord uw " +
            "JOIN Unit u ON uw.unitId = u.id " +
            "JOIN Word w ON uw.wordId = w.id " +
@@ -47,7 +47,7 @@ public interface UnitWordRepository extends JpaRepository<UnitWord, Long> {
     Page<UnitWordDTO> findUnitWordsByUnitIdWithDetails(@Param("unitId") Long unitId, Pageable pageable);
     
          // 搜索单元单词关联（通过单元名称和单词文本）
-     @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, COALESCE(w.americanPhonetic, w.britishPhonetic), uw.createdAt) " +
+     @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, w.americanPhonetic, w.britishPhonetic, uw.createdAt) " +
             "FROM UnitWord uw " +
             "JOIN Unit u ON uw.unitId = u.id " +
             "JOIN Word w ON uw.wordId = w.id " +
@@ -64,7 +64,7 @@ public interface UnitWordRepository extends JpaRepository<UnitWord, Long> {
     Page<UnitWord> searchUnitWordsByUnitId(@Param("unitId") Long unitId, @Param("keyword") String keyword, Pageable pageable);
     
     // 根据单元ID搜索单元单词关联（通过单词文本，返回详细信息）
-    @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, COALESCE(w.americanPhonetic, w.britishPhonetic), uw.createdAt) " +
+    @Query("SELECT new com.jiji.dto.UnitWordDTO(uw.id, uw.unitId, u.name, u.textbookId, t.name, t.grade, t.publisher, uw.wordId, w.wordText, w.americanPhonetic, w.britishPhonetic, uw.createdAt) " +
            "FROM UnitWord uw " +
            "JOIN Unit u ON uw.unitId = u.id " +
            "JOIN Word w ON uw.wordId = w.id " +

@@ -43,7 +43,6 @@
             <th>ID</th>
             <th>单元名称</th>
             <th>单词</th>
-            <th>音标</th>
             <th>所属教材</th>
             <th>创建时间</th>
                          <th>删除</th>
@@ -54,7 +53,6 @@
             <td>{{ unitWord.id }}</td>
             <td>{{ unitWord.unitName || '-' }}</td>
             <td>{{ unitWord.wordText || '-' }}</td>
-            <td>{{ unitWord.phonetic || '-' }}</td>
             <td>{{ unitWord.textbookGrade && unitWord.textbookName ? `${unitWord.textbookGrade} - ${unitWord.textbookName}${unitWord.textbookPublisher ? `（${unitWord.textbookPublisher}）` : ''}` : '-' }}</td>
             <td>{{ formatDate(unitWord.createdAt) }}</td>
             <td>
@@ -157,9 +155,6 @@
                     :class="{ 'selected': formData.wordId === word.id }"
                >
                  <span class="word-text">{{ word.wordText }}</span>
-                                 <span v-if="word.phonetic" class="word-phonetic">
-              [{{ word.phonetic }}]
-            </span>
                </div>
              </div>
              
@@ -472,8 +467,7 @@ export default {
       // 保存选中的单词信息，不清空搜索结果
       selectedWordInfo.value = {
         id: word.id,
-        wordText: word.wordText,
-        phonetic: word.phonetic
+        wordText: word.wordText
       }
       wordSearchTerm.value = word.wordText
     }
@@ -489,7 +483,7 @@ export default {
          // 获取已选择单词的显示文本
     const getSelectedWordText = () => {
       if (!selectedWordInfo.value) return ''
-      return `${selectedWordInfo.value.wordText}${selectedWordInfo.value.phonetic ? ` [${selectedWordInfo.value.phonetic}]` : ''}`
+      return selectedWordInfo.value.wordText
     }
     
     // 获取教材列表
@@ -582,11 +576,7 @@ export default {
        return word ? word.wordText : '-'
      }
      
-     // 获取单词音标
-         const getWordPhonetic = (wordId) => {
-      const word = words.value.find(w => w.id === wordId)
-      return word ? (word.phonetic || '-') : '-'
-    }
+
     
     // 获取教材名称
     const getTextbookName = (unitId) => {
@@ -674,7 +664,6 @@ export default {
        handleSearch,
        getUnitName,
        getWordText,
-       getWordPhonetic,
        getTextbookName,
        formatDate,
        changePage,
@@ -1148,11 +1137,7 @@ export default {
    color: #333;
  }
  
- .word-phonetic {
-   color: #666;
-   font-size: 12px;
-   font-style: italic;
- }
+
  
  .no-word-found {
    margin-top: 10px;

@@ -9,7 +9,7 @@
         <h2>{{ unit?.name }}</h2>
         <span class="progress">{{ currentIndex + 1 }} / {{ words.length }}</span>
         <div class="keyboard-hints">
-          <span>← → 翻页 | ESC 返回</span>
+          <span>← → 翻页（循环） | ESC 返回</span>
         </div>
       </div>
              <div class="nav-controls">
@@ -21,14 +21,12 @@
          </button>
          <button 
            @click="previousPage" 
-           :disabled="currentIndex === 0"
            class="nav-btn prev-btn"
          >
            ← 上一页
          </button>
          <button 
            @click="nextPage" 
-           :disabled="currentIndex === words.length - 1"
            class="nav-btn next-btn"
          >
            下一页 →
@@ -78,8 +76,12 @@
                    :key="meaning.id" 
                    class="meaning-item"
                  >
-                   <div class="meaning-pos">{{ meaning.pos || meaning.partOfSpeech || meaning.type || '未知词性' }}</div>
-                   <div class="meaning-content">{{ meaning.content || meaning.meaning || '暂无释义' }}</div>
+                   <div class="meaning-left">
+                     <div class="meaning-pos">{{ meaning.pos || meaning.partOfSpeech || meaning.type || '未知词性' }}</div>
+                   </div>
+                   <div class="meaning-right">
+                     <div class="meaning-content">{{ meaning.content || meaning.meaning || '暂无释义' }}</div>
+                   </div>
                  </div>
              </div>
            </div>
@@ -93,42 +95,56 @@
       <div class="content-section">
         <!-- 词组区域 -->
         <div class="phrase-section">
-          <h3>词组</h3>
-
-          
-          <div v-if="currentWord.phrases && currentWord.phrases.length > 0" class="phrase-list">
-            <div 
-              v-for="phrase in currentWord.phrases" 
-              :key="phrase.id" 
-              class="phrase-item"
-            >
+        <h3>词组</h3>
+        <div v-if="currentWord.phrases && currentWord.phrases.length > 0" class="phrase-list">
+          <div 
+            v-for="phrase in currentWord.phrases" 
+            :key="phrase.id" 
+            class="phrase-item"
+          >
+            <div class="phrase-content">
               <div class="phrase-text">{{ phrase.phraseText }}</div>
               <div class="phrase-translation">{{ phrase.translation }}</div>
             </div>
-          </div>
-          <div v-else class="no-content">
-            <p>暂无词组</p>
+            <button 
+              @click="playPhraseAudio(phrase.phraseText)" 
+              class="phrase-audio-btn"
+              title="播放词组发音"
+            >
+              🔊
+            </button>
           </div>
         </div>
+        <div v-else class="no-content">
+          <p>暂无词组</p>
+        </div>
+      </div>
 
-        <!-- 例句区域 -->
-        <div class="sentence-section">
-          <h3>例句</h3>
-
-          
-          <div v-if="currentWord.sentences && currentWord.sentences.length > 0" class="sentence-list">
-            <div 
-              v-for="sentence in currentWord.sentences" 
-              :key="sentence.id" 
-              class="sentence-item"
-            >
+      <!-- 例句区域 -->
+      <div class="sentence-section">
+        <h3>例句</h3>
+        <div v-if="currentWord.sentences && currentWord.sentences.length > 0" class="sentence-list">
+          <div 
+            v-for="sentence in currentWord.sentences" 
+            :key="sentence.id" 
+            class="sentence-item"
+          >
+            <div class="sentence-content">
               <div class="sentence-text">{{ sentence.sentenceText }}</div>
               <div class="sentence-translation">{{ sentence.translation }}</div>
             </div>
+            <button 
+              @click="playSentenceAudio(sentence.sentenceText)" 
+              class="sentence-audio-btn"
+              title="播放例句发音"
+            >
+              🔊
+            </button>
           </div>
-          <div v-else class="no-content">
-            <p>暂无例句</p>
-          </div>
+        </div>
+        <div v-else class="no-content">
+          <p>暂无例句</p>
+        </div>
         </div>
       </div>
     </div>
@@ -216,7 +232,8 @@ export default {
        const searchTerm = wordListSearchTerm.value.toLowerCase()
        return words.value.filter(word => 
          word.word.toLowerCase().includes(searchTerm) ||
-         (word.phonetic && word.phonetic.toLowerCase().includes(searchTerm))
+         (word.americanPhonetic && word.americanPhonetic.toLowerCase().includes(searchTerm)) ||
+         (word.britishPhonetic && word.britishPhonetic.toLowerCase().includes(searchTerm))
        )
      })
 
@@ -316,26 +333,26 @@ export default {
                  console.log('Meanings data structure:', meanings[0])
                }
                
-               return {
-                 ...unitWord,
-                 word: unitWord.wordText, // 使用后端返回的wordText
-                 americanPhonetic: unitWord.phonetic, // 使用后端返回的phonetic
-                 britishPhonetic: unitWord.phonetic, // 暂时都用同一个音标
-                 phrases,
-                 sentences,
-                 meanings
-               }
+                               return {
+                  ...unitWord,
+                  word: unitWord.wordText, // 使用后端返回的wordText
+                  americanPhonetic: unitWord.americanPhonetic, // 使用后端返回的美音音标
+                  britishPhonetic: unitWord.britishPhonetic, // 使用后端返回的英音音标
+                  phrases,
+                  sentences,
+                  meanings
+                }
             } catch (err) {
               console.error(`Failed to get details for word ${unitWord.wordId}:`, err)
-                               return {
-                   ...unitWord,
-                   word: unitWord.wordText || '未知单词',
-                   americanPhonetic: unitWord.phonetic || null,
-                   britishPhonetic: unitWord.phonetic || null,
-                   phrases: [],
-                   sentences: [],
-                   meanings: []
-                 }
+                                                               return {
+                    ...unitWord,
+                    word: unitWord.wordText || '未知单词',
+                    americanPhonetic: unitWord.americanPhonetic || null,
+                    britishPhonetic: unitWord.britishPhonetic || null,
+                    phrases: [],
+                    sentences: [],
+                    meanings: []
+                  }
             }
           })
         )
@@ -349,26 +366,50 @@ export default {
       }
     }
 
-    // 播放音频
-    const playAudio = (type) => {
-      const word = currentWord.value
-      if (!word) return
-      
-      // TODO: 实现音频播放功能
-      console.log(`Playing ${type} audio for word: ${word.word}`)
-      alert(`播放${type === 'american' ? '美音' : '英音'}：${word.word}`)
-    }
+         // 播放音频
+     const playAudio = (type) => {
+       const word = currentWord.value
+       if (!word) return
+       
+       // TODO: 实现音频播放功能
+       console.log(`Playing ${type} audio for word: ${word.word}`)
+       alert(`播放${type === 'american' ? '美音' : '英音'}：${word.word}`)
+     }
+     
+     // 播放词组音频
+     const playPhraseAudio = (phraseText) => {
+       // TODO: 实现词组音频播放功能
+       console.log(`Playing phrase audio: ${phraseText}`)
+       alert(`播放词组发音：${phraseText}`)
+     }
+     
+     // 播放例句音频
+     const playSentenceAudio = (sentenceText) => {
+       // TODO: 实现例句音频播放功能
+       console.log(`Playing sentence audio: ${sentenceText}`)
+       alert(`播放例句发音：${sentenceText}`)
+     }
 
-    // 翻页功能
+    // 翻页功能（支持循环翻页）
     const nextPage = () => {
+      if (words.value.length === 0) return
+      
       if (currentIndex.value < words.value.length - 1) {
         currentIndex.value++
+      } else {
+        // 循环到第一页
+        currentIndex.value = 0
       }
     }
 
     const previousPage = () => {
+      if (words.value.length === 0) return
+      
       if (currentIndex.value > 0) {
         currentIndex.value--
+      } else {
+        // 循环到最后一页
+        currentIndex.value = words.value.length - 1
       }
     }
 
@@ -450,6 +491,8 @@ export default {
            wordListSearchTerm,
            filteredWordList,
            playAudio,
+           playPhraseAudio,
+           playSentenceAudio,
            nextPage,
            previousPage,
            goBack,
@@ -464,10 +507,21 @@ export default {
 </script>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
 .browse-mode {
-  min-height: 100vh;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 64px);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  padding: 30px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .top-nav {
@@ -479,6 +533,7 @@ export default {
   padding: 20px;
   margin-bottom: 30px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .back-btn {
@@ -574,16 +629,26 @@ export default {
 
 .main-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 500px 1000px;
   gap: 30px;
-  max-width: 1200px;
+  width: 1530px;
   margin: 0 auto;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .word-section {
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  height: 100%;
+  overflow: hidden;
+  width: 500px;
+  min-width: 500px;
+  max-width: 500px;
+  min-height: 100%;
+  max-height: 100%;
 }
 
 .word-card {
@@ -594,6 +659,12 @@ export default {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 500px;
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .word-text {
@@ -647,20 +718,33 @@ export default {
   background: #f8f9ff;
   border-radius: 10px;
   border-left: 4px solid #667eea;
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.meaning-left {
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.meaning-right {
+  flex: 1;
 }
 
 .meaning-pos {
   font-size: 14px;
   color: #667eea;
   font-weight: 600;
-  margin-bottom: 8px;
   text-transform: uppercase;
+  margin: 0;
 }
 
 .meaning-content {
   font-size: 16px;
   color: #333;
   line-height: 1.4;
+  margin: 0;
 }
 
 .no-meanings {
@@ -717,14 +801,47 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 30px;
+  height: 100%;
+  overflow: hidden;
+  min-height: 100%;
+  max-height: 100%;
+  width: 1000px;
+  min-width: 1000px;
+  max-width: 1000px;
 }
 
-.phrase-section,
+.phrase-section {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 45%;
+  min-height: 45%;
+  max-height: 45%;
+  width: 1000px;
+  min-width: 1000px;
+  max-width: 1000px;
+  box-sizing: border-box;
+}
+
 .sentence-section {
   background: white;
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 55%;
+  min-height: 55%;
+  max-height: 55%;
+  width: 1000px;
+  min-width: 1000px;
+  max-width: 1000px;
+  box-sizing: border-box;
 }
 
 .phrase-section h3,
@@ -736,20 +853,49 @@ export default {
   padding-bottom: 10px;
 }
 
-.phrase-list,
+.phrase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
 .sentence-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  overflow-y: auto;
+  flex: 1;
 }
 
-.phrase-item,
-.sentence-item {
-  padding: 15px;
-  background: #f8f9ff;
-  border-radius: 8px;
-  border-left: 4px solid #667eea;
-}
+ .phrase-item {
+   display: flex;
+   align-items: flex-start;
+   justify-content: space-between;
+   padding: 12px;
+   background: #f8f9ff;
+   border-radius: 8px;
+   border-left: 4px solid #667eea;
+   gap: 12px;
+   flex: 1;
+ }
+
+ .sentence-item {
+   display: flex;
+   align-items: flex-start;
+   justify-content: space-between;
+   padding: 15px;
+   background: #f8f9ff;
+   border-radius: 8px;
+   border-left: 4px solid #667eea;
+   gap: 15px;
+ }
+ 
+ .phrase-content,
+ .sentence-content {
+   flex: 1;
+ }
 
 .phrase-text,
 .sentence-text {
@@ -757,19 +903,53 @@ export default {
   color: #333;
   margin-bottom: 8px;
   font-weight: 500;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
-.phrase-translation,
-.sentence-translation {
-  font-size: 14px;
-  color: #666;
-  font-style: italic;
-}
+ .phrase-translation,
+ .sentence-translation {
+   font-size: 14px;
+   color: #666;
+   font-style: italic;
+   word-wrap: break-word;
+   overflow-wrap: break-word;
+   hyphens: auto;
+ }
+ 
+ .phrase-audio-btn,
+ .sentence-audio-btn {
+   background: #667eea;
+   color: white;
+   border: none;
+   border-radius: 50%;
+   width: 36px;
+   height: 36px;
+   font-size: 16px;
+   cursor: pointer;
+   transition: all 0.3s ease;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   flex-shrink: 0;
+ }
+ 
+ .phrase-audio-btn:hover,
+ .sentence-audio-btn:hover {
+   background: #5a6fd8;
+   transform: scale(1.1);
+   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+ }
 
 .no-content {
   text-align: center;
   padding: 40px;
   color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
 .no-content p {
@@ -782,7 +962,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 60vh;
+  flex: 1;
   color: white;
 }
 
@@ -805,6 +985,11 @@ export default {
   text-align: center;
   color: white;
   padding: 40px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .retry-btn {

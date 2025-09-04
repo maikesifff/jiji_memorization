@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <!-- 登录页面不显示导航 -->
-    <nav v-if="authStore.isAuthenticated" class="navbar">
+    <!-- 登录页面和后台管理页面不显示导航 -->
+    <nav v-if="authStore.isAuthenticated && !isAdminPage" class="navbar">
       <div class="nav-container">
         <div class="nav-brand">
           <router-link to="/" class="brand-link">吉吉记单词</router-link>
@@ -27,14 +27,20 @@
 
 <script>
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
-import { onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { onMounted, computed } from 'vue'
 
 export default {
   name: 'App',
   setup() {
     const authStore = useAuthStore()
     const router = useRouter()
+    const route = useRoute()
+    
+    // 判断当前是否是后台管理页面
+    const isAdminPage = computed(() => {
+      return route.path === '/admin'
+    })
     
     // 组件挂载时检查认证状态
     onMounted(() => {
@@ -48,6 +54,7 @@ export default {
     
     return {
       authStore,
+      isAdminPage,
       handleLogout
     }
   }

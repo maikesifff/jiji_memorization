@@ -12,7 +12,8 @@ public class UnitWordDTO {
     private String textbookPublisher;
     private Long wordId;
     private String wordText;
-    private String phonetic;      // 音标（优先显示美音，如果没有则显示英音）
+    private String americanPhonetic; // 美音音标
+    private String britishPhonetic;  // 英音音标
     private LocalDateTime createdAt;
 
     // 无参构造函数（Hibernate 需要）
@@ -20,7 +21,7 @@ public class UnitWordDTO {
     
     public UnitWordDTO(Long id, Long unitId, String unitName, Long textbookId, String textbookName, 
                       String textbookGrade, String textbookPublisher, Long wordId, String wordText, 
-                      String phonetic, LocalDateTime createdAt) {
+                      String americanPhonetic, String britishPhonetic, LocalDateTime createdAt) {
         this.id = id;
         this.unitId = unitId;
         this.unitName = unitName;
@@ -30,7 +31,8 @@ public class UnitWordDTO {
         this.textbookPublisher = textbookPublisher;
         this.wordId = wordId;
         this.wordText = wordText;
-        this.phonetic = phonetic;
+        this.americanPhonetic = americanPhonetic;
+        this.britishPhonetic = britishPhonetic;
         this.createdAt = createdAt;
     }
 
@@ -62,8 +64,11 @@ public class UnitWordDTO {
     public String getWordText() { return wordText; }
     public void setWordText(String wordText) { this.wordText = wordText; }
 
-    public String getPhonetic() { return phonetic; }
-    public void setPhonetic(String phonetic) { this.phonetic = phonetic; }
+    public String getAmericanPhonetic() { return americanPhonetic; }
+    public void setAmericanPhonetic(String americanPhonetic) { this.americanPhonetic = americanPhonetic; }
+    
+    public String getBritishPhonetic() { return britishPhonetic; }
+    public void setBritishPhonetic(String britishPhonetic) { this.britishPhonetic = britishPhonetic; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

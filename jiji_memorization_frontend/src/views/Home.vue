@@ -1,93 +1,100 @@
 <template>
   <div class="home">
-    <!-- 欢迎区域 -->
-    <div class="welcome-section">
-      <h1>欢迎回来，{{ authStore.currentUser?.username }}！</h1>
-      <p>开始你的吉吉记单词之旅吧</p>
-    </div>
-    
-    <!-- 教材选择区域 -->
-    <div class="textbook-section">
-      <div class="section-header">
-        <h2>当前教材</h2>
-        <button @click="showTextbookSelector = true" class="select-btn">
-          {{ currentTextbook ? '更换教材' : '选择教材' }}
-        </button>
-      </div>
-      
-      <div v-if="currentTextbook" class="current-textbook">
-        <div class="textbook-info">
-          <h3>{{ currentTextbook.grade.gradeName }} - {{ currentTextbook.textbook.name }}</h3>
-          <p>已选择教材，可以开始学习</p>
-        </div>
-      </div>
-      
-      <div v-else class="no-textbook">
-        <p>请先选择教材开始学习</p>
-      </div>
-    </div>
+         <!-- 欢迎和教材选择区域 -->
+     <div class="welcome-textbook-section">
+       <div class="textbook-section">
+         <!-- 欢迎文字区域 -->
+         <div class="welcome-section">
+           <h1>欢迎回来，{{ authStore.currentUser?.username }}！</h1>
+           <p>开始你的吉吉记单词之旅吧</p>
+         </div>
+         
+                   <div class="textbook-content">
+            <div class="section-header">
+              <h2>当前教材</h2>
+              <button @click="showTextbookSelector = true" class="select-btn">
+                {{ currentTextbook ? '更换教材' : '选择教材' }}
+              </button>
+            </div>
+            
+            <div v-if="currentTextbook" class="current-textbook">
+              <div class="textbook-info">
+                <h3>{{ currentTextbook.grade.gradeName }} - {{ currentTextbook.textbook.name }}</h3>
+                <p>已选择教材，可以开始学习</p>
+              </div>
+            </div>
+            
+            <div v-else class="no-textbook">
+              <p>请先选择教材开始学习</p>
+            </div>
+          </div>
+       </div>
+     </div>
     
     <!-- 单元进度区域 -->
     <div v-if="currentTextbook" class="units-section">
       <h2>单元进度</h2>
       <div class="units-grid">
-        <div 
-          v-for="unit in units" 
-          :key="unit.id" 
-          class="unit-card"
-        >
-          <div class="unit-header">
-            <h3>{{ unit.name }}</h3>
-            <div v-if="getUnitStatusText(unit)" class="unit-status" :class="getUnitStatusClass(unit)">
-              {{ getUnitStatusText(unit) }}
+                 <div 
+           v-for="unit in units" 
+           :key="unit.id" 
+           class="unit-card"
+         >
+                       <!-- 左侧：单元信息 -->
+            <div class="unit-info">
+              <!-- 上方区域：状态和标题 -->
+              <div class="unit-header">
+                <div v-if="getUnitStatusText(unit)" class="unit-status" :class="getUnitStatusClass(unit)">
+                  {{ getUnitStatusText(unit) }}
+                </div>
+                <h3>{{ unit.name }}</h3>
+              </div>
+              
+              <!-- 下方区域：进度条和数据 -->
+              <div class="unit-content">
+                <div class="unit-progress">
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill" 
+                      :style="{ width: getUnitProgress(unit) + '%' }"
+                    ></div>
+                  </div>
+                  <div class="progress-text">
+                    {{ getUnitProgressText(unit) }}
+                  </div>
+                </div>
+                
+                                 <div class="unit-stats">
+                   <div class="stat-item">
+                     <span class="stat-label">错误次数</span>
+                     <span class="stat-value">{{ unit.errorCount || 0 }}</span>
+                   </div>
+                   <div class="stat-item">
+                     <span class="stat-label">正确率</span>
+                     <span class="stat-value">{{ getUnitAccuracy(unit) }}%</span>
+                   </div>
+                 </div>
+              </div>
             </div>
-          </div>
-          
-          <div class="unit-progress">
-            <div class="progress-bar">
-              <div 
-                class="progress-fill" 
-                :style="{ width: getUnitProgress(unit) + '%' }"
-              ></div>
-            </div>
-            <div class="progress-text">
-              {{ getUnitProgressText(unit) }}
-            </div>
-          </div>
-          
-          <div class="unit-stats">
-            <div class="stat-item">
-              <span class="stat-label">总单词</span>
-              <span class="stat-value">{{ unit.totalWords || 0 }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">已学习</span>
-              <span class="stat-value">{{ unit.learnedWords || 0 }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">进度</span>
-              <span class="stat-value">{{ getUnitProgress(unit) }}%</span>
-            </div>
-          </div>
-          
-          <!-- 学习模式选择 -->
-          <div class="learning-modes">
-            <div class="mode-section">
-              <h4>浏览模式</h4>
-              <p>浏览和查看单元中的单词</p>
-              <button @click="startBrowseMode(unit)" class="mode-btn browse-btn">
-                开始浏览
-              </button>
-            </div>
-            <div class="mode-section">
-              <h4>评测模式</h4>
-              <p>测试单词掌握程度</p>
-              <button @click="startTestMode(unit)" class="mode-btn test-btn">
-                开始评测
-              </button>
-            </div>
-          </div>
-        </div>
+           
+           <!-- 右侧：学习模式按钮 -->
+           <div class="learning-modes">
+             <div class="mode-section">
+               <h4>浏览模式</h4>
+               <p>浏览和查看单元中的单词</p>
+               <button @click="startBrowseMode(unit)" class="mode-btn browse-btn">
+                 开始浏览
+               </button>
+             </div>
+             <div class="mode-section">
+               <h4>评测模式</h4>
+               <p>测试单词掌握程度</p>
+               <button @click="startTestMode(unit)" class="mode-btn test-btn">
+                 开始评测
+               </button>
+             </div>
+           </div>
+         </div>
       </div>
     </div>
     
@@ -175,14 +182,15 @@ export default {
               const totalWords = countResponse.data
               console.log(`Unit ${unit.id} (${unit.name}): totalWords = ${totalWords}`)
               
-              // 获取用户在该单元的学习记录
-              const userProgress = await getUserUnitProgress(unit.id, totalWords)
-              
-              return {
-                ...unit,
-                totalWords: totalWords,
-                learnedWords: userProgress.learnedWords
-              }
+                             // 获取用户在该单元的学习记录
+               const userProgress = await getUserUnitProgress(unit.id, totalWords)
+               
+               return {
+                 ...unit,
+                 totalWords: totalWords,
+                 learnedWords: userProgress.learnedWords,
+                 errorCount: userProgress.errorCount
+               }
             } catch (error) {
               console.error(`Failed to get progress for unit ${unit.id}:`, error)
               return {
@@ -202,28 +210,33 @@ export default {
       }
     }
 
-    // 获取用户在指定单元的学习进度
-    const getUserUnitProgress = async (unitId, totalWords) => {
-      try {
-        // 从错误记录表查询该用户在该单元的学习数据
-        const response = await api.get(`/api/error-records/user/${authStore.currentUser.id}/unit-word/unit/${unitId}`)
-        const records = response.data
-        
-        // 统计已学习的单词数（答对次数大于等于1视为已完成）
-        const learnedWords = records.filter(record => record.correctCount >= 1).length
-        
-        return {
-          learnedWords,
-          totalWords
-        }
-      } catch (error) {
-        console.error('Failed to get user progress:', error)
-        return {
-          learnedWords: 0,
-          totalWords
-        }
-      }
-    }
+         // 获取用户在指定单元的学习进度
+     const getUserUnitProgress = async (unitId, totalWords) => {
+       try {
+         // 从错误记录表查询该用户在该单元的学习数据
+         const response = await api.get(`/api/error-records/user/${authStore.currentUser.id}/unit-word/unit/${unitId}`)
+         const records = response.data
+         
+         // 统计已学习的单词数（答对次数大于等于1视为已完成）
+         const learnedWords = records.filter(record => record.correctCount >= 1).length
+         
+         // 统计总错误次数
+         const errorCount = records.reduce((sum, record) => sum + (record.errorCount || 0), 0)
+         
+         return {
+           learnedWords,
+           totalWords,
+           errorCount
+         }
+       } catch (error) {
+         console.error('Failed to get user progress:', error)
+         return {
+           learnedWords: 0,
+           totalWords,
+           errorCount: 0
+         }
+       }
+     }
     
     // 处理教材选择
     const handleTextbookSelected = (selection) => {
@@ -256,12 +269,26 @@ export default {
       return Math.round((unit.learnedWords / unit.totalWords) * 100)
     }
     
-    // 获取单元进度文本
-    const getUnitProgressText = (unit) => {
-      const total = unit.totalWords || 0
-      const learned = unit.learnedWords || 0
-      return `${learned}/${total}`
-    }
+         // 获取单元进度文本
+     const getUnitProgressText = (unit) => {
+       const total = unit.totalWords || 0
+       const learned = unit.learnedWords || 0
+       return `${learned}/${total}`
+     }
+     
+     // 计算单元正确率
+     const getUnitAccuracy = (unit) => {
+       if (!unit.totalWords || unit.totalWords === 0) return 0
+       if (!unit.learnedWords || unit.learnedWords === 0) return 0
+       
+       // 计算总答题次数（正确次数 + 错误次数）
+       const totalAttempts = unit.learnedWords + (unit.errorCount || 0)
+       if (totalAttempts === 0) return 0
+       
+       // 正确率 = 正确次数 / 总答题次数
+       const accuracy = Math.round((unit.learnedWords / totalAttempts) * 100)
+       return accuracy
+     }
     
     // 获取单元状态
     const getUnitStatusClass = (unit) => {
@@ -312,10 +339,11 @@ export default {
       handleTextbookSelected,
       startBrowseMode,
       startTestMode,
-      getUnitProgress,
-      getUnitProgressText,
-      getUnitStatusClass,
-      getUnitStatusText
+             getUnitProgress,
+       getUnitProgressText,
+       getUnitAccuracy,
+       getUnitStatusClass,
+       getUnitStatusText
     }
   }
 }
@@ -323,18 +351,28 @@ export default {
 
 <style scoped>
 .home {
-  max-width: 1200px;
+  max-width: 1400px; /* 增加页面最大宽度 */
   margin: 0 auto;
   padding: 40px 20px;
 }
 
-.welcome-section {
-  text-align: center;
+.welcome-textbook-section {
   margin-bottom: 50px;
 }
 
+.welcome-section {
+  flex: 0 0 300px;
+  text-align: center;
+  padding-right: 20px;
+  border-right: 1px solid #e1e5e9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 120px;
+}
+
 .welcome-section h1 {
-  font-size: 32px;
+  font-size: 28px; /* 稍微减小标题字体 */
   color: #333;
   margin-bottom: 10px;
 }
@@ -348,8 +386,14 @@ export default {
   background: white;
   border-radius: 12px;
   padding: 30px;
-  margin-bottom: 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 40px;
+  align-items: stretch;
+}
+
+.textbook-content {
+  flex: 1;
 }
 
 .section-header {
@@ -420,8 +464,9 @@ export default {
 
 .units-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* 增加最小宽度 */
   gap: 20px;
+  align-items: stretch; /* 让所有卡片拉伸到相同高度 */
 }
 
 .unit-card {
@@ -431,6 +476,10 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid transparent;
+  display: flex;
+  flex-direction: row; /* 改为左右布局 */
+  height: 100%; /* 让卡片占满整个高度 */
+  gap: 20px; /* 左右两边的间距 */
 }
 
 .unit-card:hover {
@@ -441,15 +490,22 @@ export default {
 
 .unit-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 15px;
+  justify-content: center; /* 垂直居中 */
 }
 
 .unit-header h3 {
-  margin: 0;
+  margin: 20px 0 0 0; /* 添加顶部偏移，让标题往下一点 */
   color: #333;
   font-size: 18px;
+  text-align: center;
+  line-height: 1.3; /* 控制行高 */
+  word-wrap: break-word; /* 长单词换行 */
+  flex: 1; /* 占据剩余空间 */
+  display: flex;
+  align-items: center; /* 在自己的区域内垂直居中 */
+  justify-content: center; /* 在自己的区域内水平居中 */
 }
 
 .unit-status {
@@ -457,6 +513,8 @@ export default {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
+  flex-shrink: 0; /* 防止状态标签被压缩 */
+  white-space: nowrap; /* 状态文字不换行 */
 }
 
 .unit-status.not-started {
@@ -475,7 +533,8 @@ export default {
 }
 
 .unit-progress {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  flex-shrink: 0; /* 防止进度条被压缩 */
 }
 
 .progress-bar {
@@ -501,8 +560,10 @@ export default {
 
 .unit-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 15px;
+  flex-shrink: 0; /* 防止统计信息被压缩 */
+  margin-top: 0; /* 移除上边距 */
 }
 
 .stat-item {
@@ -563,18 +624,49 @@ export default {
   font-weight: 500;
 }
 
+.unit-info {
+  flex: 1; /* 左侧占据剩余空间 */
+  display: flex;
+  flex-direction: column;
+}
+
+.unit-header {
+  flex: 1; /* 占据上半部分 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* 垂直居中 */
+}
+
+.unit-content {
+  flex: 1; /* 占据下半部分 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 内容上下居中 */
+  gap: 15px; /* 进度条和数据之间的间距 */
+}
+
 .learning-modes {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e1e5e9;
+  flex-shrink: 0; /* 右侧固定宽度，不压缩 */
+  display: flex;
+  flex-direction: column;
+  min-width: 200px; /* 设置最小宽度 */
 }
 
 .mode-section {
-  margin-bottom: 15px;
+  flex: 1; /* 平分右侧高度 */
   padding: 15px;
   background: white;
   border-radius: 8px;
   border: 1px solid #e1e5e9;
+  text-align: center; /* 居中对齐 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 内容垂直居中 */
+}
+
+.mode-section:first-child {
+  margin-bottom: 10px; /* 第一个模式区域底部添加间距 */
 }
 
 .mode-section h4 {

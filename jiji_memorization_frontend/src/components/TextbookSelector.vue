@@ -38,7 +38,7 @@
       <div class="confirm-section">
         <div v-if="selectedTextbook" class="selected-info">
           <p><strong>已选择：</strong></p>
-          <p>{{ (selectedGrade ? selectedGrade.gradeName : '全部年级') }} - {{ selectedTextbook.name }}</p>
+          <p>{{ selectedTextbook.grade }} - {{ selectedTextbook.name }}</p>
         </div>
         <div v-else class="no-selection-info">
           <p>请选择教材</p>
@@ -128,8 +128,11 @@ export default {
     // 确认选择
     const confirmSelection = () => {
       if (selectedTextbook.value) {
-        // 如果没有选择年级（全部年级），创建一个默认年级对象
-        const grade = selectedGrade.value || { id: null, gradeName: '全部年级' }
+        // 使用教材本身的年级信息，而不是筛选的年级
+        const grade = {
+          id: selectedTextbook.value.grade,
+          gradeName: selectedTextbook.value.grade
+        }
         emit('textbook-selected', {
           grade: grade,
           textbook: selectedTextbook.value
@@ -176,9 +179,10 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  padding: 30px 30px 20px 30px;
   border-bottom: 1px solid #e1e5e9;
+  background: white;
+  flex-shrink: 0; /* 固定头部 */
 }
 
 .selector-header h2 {
@@ -210,18 +214,25 @@ export default {
 .selector-content {
   background: white;
   border-radius: 12px;
-  padding: 30px;
   max-width: 600px;
   width: 90%;
   max-height: 80vh;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 防止整个内容滚动 */
 }
 
-.grade-section,
+.grade-section {
+  padding: 20px 30px;
+  background: white;
+  border-bottom: 1px solid #e1e5e9;
+  flex-shrink: 0; /* 固定年级选择区域 */
+}
+
 .textbook-section {
-  margin-bottom: 30px;
+  flex: 1; /* 占据剩余空间 */
+  padding: 20px 30px;
+  overflow-y: auto; /* 只有教材列表可以滚动 */
 }
 
 .grade-section h3,
@@ -232,7 +243,7 @@ export default {
 }
 
 .grade-selector {
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
 .grade-select {
@@ -282,8 +293,10 @@ export default {
 
 .confirm-section {
   text-align: center;
-  padding-top: 20px;
+  padding: 20px 30px 30px 30px;
   border-top: 1px solid #e1e5e9;
+  background: white;
+  flex-shrink: 0; /* 固定确认区域 */
 }
 
 .selected-info,
