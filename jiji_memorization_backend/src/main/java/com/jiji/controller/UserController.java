@@ -1,7 +1,6 @@
 package com.jiji.controller;
 
 import com.jiji.entity.User;
-import com.jiji.entity.UserStatus;
 import com.jiji.service.UserService;
 import com.jiji.util.PageResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -239,6 +237,119 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("status", "error");
             response.put("message", "获取用户统计信息失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    
+    // 上传用户头像
+    @PostMapping("/upload-avatar")
+    public ResponseEntity<?> uploadAvatar(@RequestBody Map<String, Object> request) {
+        try {
+            Long userId = Long.valueOf(request.get("userId").toString());
+            String fileName = request.get("fileName").toString();
+            String fileData = request.get("fileData").toString();
+            String fileType = request.get("fileType").toString();
+            Long fileSize = Long.valueOf(request.get("fileSize").toString());
+            
+            // 验证文件类型（只允许图片）
+            if (!fileType.startsWith("image/")) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "只允许上传图片文件");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            // 验证文件大小（2MB限制）
+            if (fileSize > 2 * 1024 * 1024) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "文件大小不能超过2MB");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            // 验证文件名格式（必须以avatar_开头）
+            if (!fileName.startsWith("avatar_")) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "文件名格式不正确");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            // 查找用户
+            Optional<User> userOpt = userService.findById(userId);
+            if (!userOpt.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "用户不存在");
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 保存头像文件并更新用户信息
+            String avatarPath = userService.uploadAvatar(userOpt.get(), fileName, fileData, fileType);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "头像上传成功");
+            response.put("avatarPath", avatarPath);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "头像上传失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    // 更新用户头像（保留原有方法作为备用）
+    @PutMapping("/{id}/avatar")
+    public ResponseEntity<?> updateUserAvatar(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String avatarPath = request.get("avatarPath");
+            if (avatarPath == null || avatarPath.trim().isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "头像路径不能为空");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            Optional<User> userOpt = userService.findById(id);
+            if (!userOpt.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "用户不存在");
+                return ResponseEntity.notFound().build();
+            }
+            
+            User user = userOpt.get();
+            user.setAvatar(avatarPath);
+            User updatedUser = userService.updateUser(user);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "头像更新成功");
+            
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", updatedUser.getId());
+            userInfo.put("username", updatedUser.getUsername());
+            userInfo.put("email", updatedUser.getEmail());
+            userInfo.put("nickname", updatedUser.getNickname());
+            userInfo.put("avatar", updatedUser.getAvatar());
+            userInfo.put("status", updatedUser.getStatus());
+            userInfo.put("createdAt", updatedUser.getCreatedAt());
+            userInfo.put("updatedAt", updatedUser.getUpdatedAt());
+            userInfo.put("lastLoginAt", updatedUser.getLastLoginAt());
+            
+            response.put("user", userInfo);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "头像更新失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }

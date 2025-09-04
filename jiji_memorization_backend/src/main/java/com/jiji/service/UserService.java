@@ -9,7 +9,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -80,7 +86,7 @@ public class UserService {
     
     // 更新用户信息
     public User updateUser(User user) {
-        user.setUpdatedAt(LocalDateTime.now());
+        // 不需要手动设置updatedAt，@PreUpdate会自动处理
         return userRepository.save(user);
     }
     
@@ -96,7 +102,7 @@ public class UserService {
     public void updateUserStatus(Long userId, UserStatus status) {
         userRepository.findById(userId).ifPresent(user -> {
             user.setStatus(status);
-            user.setUpdatedAt(LocalDateTime.now());
+            // 不需要手动设置updatedAt，@PreUpdate会自动处理
             userRepository.save(user);
         });
     }
@@ -122,5 +128,44 @@ public class UserService {
     @Transactional(readOnly = true)
     public long countActiveUsers() {
         return userRepository.countByStatus(UserStatus.ACTIVE);
+    }
+    
+    // 上传用户头像
+    public String uploadAvatar(User user, String fileName, String base64Data, String fileType) throws IOException {
+        // 创建uploads/avatars目录
+        String uploadDir = "uploads/avatars";
+        Path uploadPath = Paths.get(uploadDir);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+        
+        // 删除用户之前的头像文件
+        if (user.getAvatar() != null && user.getAvatar().startsWith("avatar_")) {
+            try {
+                Path oldAvatarPath = uploadPath.resolve(user.getAvatar());
+                if (Files.exists(oldAvatarPath)) {
+                    Files.delete(oldAvatarPath);
+                    System.out.println("删除旧头像文件: " + user.getAvatar());
+                }
+            } catch (IOException e) {
+                System.err.println("删除旧头像文件失败: " + e.getMessage());
+                // 不抛出异常，继续处理新文件
+            }
+        }
+        
+        // 保存新头像文件
+        Path filePath = uploadPath.resolve(fileName);
+        byte[] fileBytes = Base64.getDecoder().decode(base64Data);
+        
+        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+            fos.write(fileBytes);
+        }
+        
+        // 更新用户头像信息
+        user.setAvatar(fileName);
+        userRepository.save(user);
+        
+        System.out.println("头像文件保存成功: " + fileName);
+        return fileName;
     }
 }

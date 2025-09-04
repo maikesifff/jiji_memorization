@@ -338,6 +338,8 @@ export default {
                   word: unitWord.wordText, // 使用后端返回的wordText
                   americanPhonetic: unitWord.americanPhonetic, // 使用后端返回的美音音标
                   britishPhonetic: unitWord.britishPhonetic, // 使用后端返回的英音音标
+                  pronUs: unitWord.pronUs, // 美音发音
+                  pronUk: unitWord.pronUk, // 英音发音
                   phrases,
                   sentences,
                   meanings
@@ -349,6 +351,8 @@ export default {
                     word: unitWord.wordText || '未知单词',
                     americanPhonetic: unitWord.americanPhonetic || null,
                     britishPhonetic: unitWord.britishPhonetic || null,
+                    pronUs: unitWord.pronUs || null,
+                    pronUk: unitWord.pronUk || null,
                     phrases: [],
                     sentences: [],
                     meanings: []
@@ -371,23 +375,124 @@ export default {
        const word = currentWord.value
        if (!word) return
        
-       // TODO: 实现音频播放功能
-       console.log(`Playing ${type} audio for word: ${word.word}`)
-       alert(`播放${type === 'american' ? '美音' : '英音'}：${word.word}`)
+       const audioData = type === 'american' ? word.pronUs : word.pronUk
+       if (!audioData) {
+         console.warn(`No audio data for ${type} pronunciation of word: ${word.word}`)
+         return
+       }
+       
+       try {
+         // 创建音频元素
+         const audio = new Audio()
+         
+         // 判断是URL还是base64数据
+         if (audioData.startsWith('http://') || audioData.startsWith('https://')) {
+           // URL格式
+           audio.src = audioData
+         } else if (audioData.startsWith('data:audio/')) {
+           // 完整的data URL格式
+           audio.src = audioData
+         } else {
+           // 假设是base64数据，添加data URL前缀
+           audio.src = `data:audio/mpeg;base64,${audioData}`
+         }
+         
+         // 播放音频
+         audio.play().catch(error => {
+           console.error('Audio play failed:', error)
+           // 如果播放失败，尝试其他格式
+           if (!audioData.startsWith('data:audio/')) {
+             audio.src = `data:audio/wav;base64,${audioData}`
+             audio.play().catch(err => {
+               console.error('Audio play failed with wav format:', err)
+             })
+           }
+         })
+         
+         console.log(`Playing ${type} audio for word: ${word.word}`)
+       } catch (error) {
+         console.error('Error creating audio:', error)
+       }
      }
      
      // 播放词组音频
      const playPhraseAudio = (phraseText) => {
-       // TODO: 实现词组音频播放功能
-       console.log(`Playing phrase audio: ${phraseText}`)
-       alert(`播放词组发音：${phraseText}`)
+       const word = currentWord.value
+       if (!word || !word.phrases) return
+       
+       // 找到对应的词组
+       const phrase = word.phrases.find(p => p.phraseText === phraseText)
+       if (!phrase || !phrase.pron) {
+         console.warn(`No audio data for phrase: ${phraseText}`)
+         return
+       }
+       
+       try {
+         const audio = new Audio()
+         
+         // 判断是URL还是base64数据
+         if (phrase.pron.startsWith('http://') || phrase.pron.startsWith('https://')) {
+           audio.src = phrase.pron
+         } else if (phrase.pron.startsWith('data:audio/')) {
+           audio.src = phrase.pron
+         } else {
+           audio.src = `data:audio/mpeg;base64,${phrase.pron}`
+         }
+         
+         audio.play().catch(error => {
+           console.error('Phrase audio play failed:', error)
+           if (!phrase.pron.startsWith('data:audio/')) {
+             audio.src = `data:audio/wav;base64,${phrase.pron}`
+             audio.play().catch(err => {
+               console.error('Phrase audio play failed with wav format:', err)
+             })
+           }
+         })
+         
+         console.log(`Playing phrase audio: ${phraseText}`)
+       } catch (error) {
+         console.error('Error creating phrase audio:', error)
+       }
      }
      
      // 播放例句音频
      const playSentenceAudio = (sentenceText) => {
-       // TODO: 实现例句音频播放功能
-       console.log(`Playing sentence audio: ${sentenceText}`)
-       alert(`播放例句发音：${sentenceText}`)
+       const word = currentWord.value
+       if (!word || !word.sentences) return
+       
+       // 找到对应的例句
+       const sentence = word.sentences.find(s => s.sentenceText === sentenceText)
+       if (!sentence || !sentence.pron) {
+         console.warn(`No audio data for sentence: ${sentenceText}`)
+         return
+       }
+       
+       try {
+         const audio = new Audio()
+         
+         // 判断是URL还是base64数据
+         if (sentence.pron.startsWith('http://') || sentence.pron.startsWith('https://')) {
+           audio.src = sentence.pron
+         } else if (sentence.pron.startsWith('data:audio/')) {
+           audio.src = sentence.pron
+         } else {
+           audio.src = `data:audio/mpeg;base64,${sentence.pron}`
+         }
+         
+         audio.play().catch(error => {
+           console.error('Sentence audio play failed:', error)
+           if (!sentence.pron.startsWith('data:audio/')) {
+             audio.src = `data:audio/wav;base64,${sentence.pron}`
+             audio.play().catch(err => {
+               console.error('Sentence audio play failed with wav format:', err)
+             })
+           }
+         })
+         
+         console.log(`Playing sentence audio: ${sentenceText}`)
+       } catch (error) {
+         console.error('Error creating sentence audio:', error)
+       }
      }
 
     // 翻页功能（支持循环翻页）
@@ -507,473 +612,513 @@ export default {
 </script>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-}
+/* 整体布局 - 适应组件容器，无滚动条 */
 .browse-mode {
-  position: fixed;
-  top: 64px;
-  left: 0;
-  width: 100vw;
-  height: calc(100vh - 64px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 30px;
+  width: 100%;
+  height: calc(100vh - 64px); /* 减去导航栏高度 */
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* 顶部导航栏 - 独立岛状设计 */
 .top-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: white;
+  height: 8vh;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2vw;
+  margin: 2vh 2vw 0 2vw;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
 .back-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: #6c757d;
-  color: white;
-  border: none;
+  background: rgba(255, 255, 255, 0.8);
+  color: #666;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 1vh 1.5vw;
   border-radius: 8px;
-  font-size: 16px;
   cursor: pointer;
+  font-size: 1vw;
+  font-weight: 500;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .back-btn:hover {
-  background: #5a6268;
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .unit-info {
   text-align: center;
+  flex: 1;
 }
 
 .unit-info h2 {
-  margin: 0 0 5px 0;
-  color: #333;
-  font-size: 24px;
+  margin: 0;
+  font-size: 1.3vw;
+  color: #2c3e50;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .progress {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 5px;
+  display: block;
+  font-size: 0.9vw;
+  color: #7f8c8d;
+  margin-top: 0.3vh;
+  line-height: 1.2;
 }
 
 .keyboard-hints {
-  font-size: 12px;
-  color: #999;
+  font-size: 0.7vw;
+  color: #95a5a6;
+  margin-top: 0.2vh;
+  line-height: 1.2;
 }
 
 .nav-controls {
   display: flex;
-  gap: 15px;
+  gap: 1vw;
 }
 
 .nav-btn {
-  padding: 12px 20px;
+  background: linear-gradient(45deg, #74b9ff, #0984e3);
+  color: white;
   border: none;
+  padding: 1vh 1.5vw;
   border-radius: 8px;
-  font-size: 16px;
   cursor: pointer;
+  font-size: 0.9vw;
+  font-weight: 600;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(116, 185, 255, 0.3);
 }
 
-.prev-btn {
-  background: #17a2b8;
-  color: white;
-}
-
-.prev-btn:hover:not(:disabled) {
-  background: #138496;
+.nav-btn:hover {
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
 }
 
-.next-btn {
-  background: #28a745;
-  color: white;
+.word-list-btn {
+  background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+  box-shadow: 0 4px 15px rgba(162, 155, 254, 0.3);
 }
 
- .next-btn:hover:not(:disabled) {
-   background: #218838;
-   transform: translateY(-2px);
- }
- 
- .word-list-btn {
-   background: #6f42c1;
-   color: white;
- }
- 
- .word-list-btn:hover {
-   background: #5a32a3;
-   transform: translateY(-2px);
- }
-
-.nav-btn:disabled {
-  background: #e9ecef;
-  color: #6c757d;
-  cursor: not-allowed;
-  transform: none;
+.word-list-btn:hover {
+  box-shadow: 0 6px 20px rgba(162, 155, 254, 0.4);
 }
 
+/* 主要内容区域 - 占据剩余高度 */
 .main-content {
-  display: grid;
-  grid-template-columns: 500px 1000px;
-  gap: 30px;
-  width: 1530px;
+  height: calc(100% - 10vh);
+  display: flex;
+  padding: 2vh 4vw;
+  gap: 2vw;
+  max-width: 90vw;
   margin: 0 auto;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
 }
 
+/* 左侧单词区域 - 固定宽度 */
 .word-section {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  width: 30vw;
   height: 100%;
-  overflow: hidden;
-  width: 500px;
-  min-width: 500px;
-  max-width: 500px;
-  min-height: 100%;
-  max-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .word-card {
-  background: white;
-  border-radius: 16px;
-  padding: 40px;
-  text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 500px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+  border-radius: 12px;
+  padding: 3vh 2.5vw;
   height: 100%;
-  min-height: 100%;
-  max-height: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
 }
 
 .word-text {
-  font-size: 48px;
-  color: #333;
-  margin: 0 0 30px 0;
-  font-weight: 700;
+  font-size: 2.5vw;
+  font-weight: 800;
+  color: #2c3e50;
+  text-align: center;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  line-height: 1.2;
 }
 
+/* 音标区域 */
 .phonetic-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-bottom: 25px;
+  margin: 1vh 0;
 }
 
 .phonetic-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
-  padding: 15px 20px;
-  background: #f8f9ff;
-  border-radius: 12px;
-  border: 2px solid #e1e5e9;
-  min-width: 200px;
+  gap: 1vw;
+  margin: 1vh 0;
+  padding: 1vh 1vw;
+  background: rgba(116, 185, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(116, 185, 255, 0.2);
 }
 
+.phonetic-label {
+  font-size: 1vw;
+  font-weight: 600;
+  color: #0984e3;
+  min-width: 3vw;
+}
+
+.phonetic-text {
+  font-size: 1.2vw;
+  color: #2c3e50;
+  font-family: 'Times New Roman', serif;
+  flex: 1;
+  text-align: center;
+}
+
+.audio-btn {
+  background: linear-gradient(45deg, #00b894, #00a085);
+  color: white;
+  border: none;
+  width: 2.5vw;
+  height: 2.5vw;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1vw;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+}
+
+.audio-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
+}
+
+.audio-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 词性释义区域 */
 .meanings-section {
-  margin-top: 25px;
+  flex: 1;
+  overflow: hidden;
 }
 
 .meanings-title {
-  margin: 0 0 15px 0;
-  color: #333;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-  border-bottom: 2px solid #667eea;
-  padding-bottom: 8px;
+  font-size: 1.3vw;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 1vh 0;
+  text-align: left;
+  border-bottom: 2px solid #74b9ff;
+  padding-bottom: 0.5vh;
 }
 
 .meanings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  height: calc(100% - 2.5vh);
+  overflow-y: auto;
+  padding-right: 1vw;
+}
+
+.meanings-list::-webkit-scrollbar {
+  width: 0.5vw;
+}
+
+.meanings-list::-webkit-scrollbar-track {
+  background: rgba(116, 185, 255, 0.1);
+  border-radius: 10px;
+}
+
+.meanings-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #74b9ff, #0984e3);
+  border-radius: 10px;
 }
 
 .meaning-item {
-  padding: 15px;
-  background: #f8f9ff;
-  border-radius: 10px;
-  border-left: 4px solid #667eea;
   display: flex;
-  gap: 15px;
-  align-items: flex-start;
+  margin: 1.5vh 0;
+  padding: 1.5vh 1.5vw;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border-left: 4px solid #74b9ff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.meaning-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .meaning-left {
-  flex-shrink: 0;
-  min-width: 80px;
+  min-width: 8vw;
+}
+
+.meaning-pos {
+  background: linear-gradient(45deg, #74b9ff, #0984e3);
+  color: white;
+  padding: 0.5vh 1vw;
+  border-radius: 6px;
+  font-size: 0.9vw;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(116, 185, 255, 0.3);
 }
 
 .meaning-right {
   flex: 1;
-}
-
-.meaning-pos {
-  font-size: 14px;
-  color: #667eea;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin: 0;
+  margin-left: 1vw;
 }
 
 .meaning-content {
-  font-size: 16px;
-  color: #333;
-  line-height: 1.4;
-  margin: 0;
+  font-size: 1.1vw;
+  color: #2c3e50;
+  line-height: 1.6;
+  font-weight: 500;
 }
 
 .no-meanings {
   text-align: center;
-  padding: 20px;
-  color: #999;
+  color: #7f8c8d;
+  font-size: 1.2vw;
+  margin-top: 5vh;
 }
 
-.no-meanings p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.phonetic-label {
-  font-size: 14px;
-  color: #666;
-  min-width: 40px;
-}
-
-.phonetic-text {
-  font-size: 18px;
-  color: #333;
-  font-family: 'Arial Unicode MS', 'Lucida Sans Unicode', sans-serif;
-  min-width: 120px;
-}
-
-.audio-btn {
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.audio-btn:hover:not(:disabled) {
-  background: #5a6fd8;
-  transform: scale(1.1);
-}
-
-.audio-btn:disabled {
-  background: #e9ecef;
-  color: #6c757d;
-  cursor: not-allowed;
-}
-
+/* 右侧内容区域 - 固定宽度 */
 .content-section {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
+  width: 56vw;
   height: 100%;
-  overflow: hidden;
-  min-height: 100%;
-  max-height: 100%;
-  width: 1000px;
-  min-width: 1000px;
-  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  gap: 2vh;
 }
 
+/* 词组区域 - 占据上半部分，比例句区域矮 */
 .phrase-section {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  height: 40vh;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+  border-radius: 12px;
+  padding: 2vh 2vw;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  height: 45%;
-  min-height: 45%;
-  max-height: 45%;
-  width: 1000px;
-  min-width: 1000px;
-  max-width: 1000px;
-  box-sizing: border-box;
 }
 
-.sentence-section {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  height: 55%;
-  min-height: 55%;
-  max-height: 55%;
-  width: 1000px;
-  min-width: 1000px;
-  max-width: 1000px;
-  box-sizing: border-box;
-}
-
-.phrase-section h3,
-.sentence-section h3 {
-  margin: 0 0 20px 0;
-  color: #333;
-  font-size: 20px;
-  border-bottom: 2px solid #667eea;
-  padding-bottom: 10px;
+.phrase-section h3 {
+  font-size: 1.3vw;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 2vh 0;
+  text-align: left;
+  border-bottom: 2px solid #a29bfe;
+  padding-bottom: 1vh;
 }
 
 .phrase-list {
+  flex: 1;
+  overflow: hidden;
+  padding-right: 1vw;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  overflow-y: auto;
+  gap: 0.8vh;
+  justify-content: flex-start;
+}
+
+.phrase-item {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 1.5vh 1.5vw;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border-left: 4px solid #a29bfe;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  height: 7vh;
+  min-height: 7vh;
+  max-height: 7vh;
+}
+
+.phrase-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.phrase-content {
   flex: 1;
+}
+
+.phrase-text {
+  font-size: 1.2vw;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.2vh;
+  line-height: 1.2;
+}
+
+.phrase-translation {
+  font-size: 1vw;
+  color: #7f8c8d;
+  line-height: 1.2;
+}
+
+.phrase-audio-btn {
+  background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+  color: white;
+  border: none;
+  width: 2.5vw;
+  height: 2.5vw;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1vw;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(162, 155, 254, 0.3);
+  margin-left: 1vw;
+}
+
+.phrase-audio-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(162, 155, 254, 0.4);
+}
+
+/* 例句区域 - 占据下半部分，比词组区域高 */
+.sentence-section {
+  height: 50vh;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+  border-radius: 12px;
+  padding: 2vh 2vw;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.sentence-section h3 {
+  font-size: 1.3vw;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 2vh 0;
+  text-align: left;
+  border-bottom: 2px solid #00b894;
+  padding-bottom: 1vh;
 }
 
 .sentence-list {
+  flex: 1;
+  overflow: hidden;
+  padding-right: 1vw;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  overflow-y: auto;
-  flex: 1;
+  gap: 0.8vh;
+  justify-content: flex-start;
 }
 
- .phrase-item {
-   display: flex;
-   align-items: flex-start;
-   justify-content: space-between;
-   padding: 12px;
-   background: #f8f9ff;
-   border-radius: 8px;
-   border-left: 4px solid #667eea;
-   gap: 12px;
-   flex: 1;
- }
-
- .sentence-item {
-   display: flex;
-   align-items: flex-start;
-   justify-content: space-between;
-   padding: 15px;
-   background: #f8f9ff;
-   border-radius: 8px;
-   border-left: 4px solid #667eea;
-   gap: 15px;
- }
- 
- .phrase-content,
- .sentence-content {
-   flex: 1;
- }
-
-.phrase-text,
-.sentence-text {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 8px;
-  font-weight: 500;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-}
-
- .phrase-translation,
- .sentence-translation {
-   font-size: 14px;
-   color: #666;
-   font-style: italic;
-   word-wrap: break-word;
-   overflow-wrap: break-word;
-   hyphens: auto;
- }
- 
- .phrase-audio-btn,
- .sentence-audio-btn {
-   background: #667eea;
-   color: white;
-   border: none;
-   border-radius: 50%;
-   width: 36px;
-   height: 36px;
-   font-size: 16px;
-   cursor: pointer;
-   transition: all 0.3s ease;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   flex-shrink: 0;
- }
- 
- .phrase-audio-btn:hover,
- .sentence-audio-btn:hover {
-   background: #5a6fd8;
-   transform: scale(1.1);
-   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
- }
-
-.no-content {
-  text-align: center;
-  padding: 40px;
-  color: #999;
+.sentence-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  margin: 0;
+  padding: 2vh 1.5vw;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border-left: 4px solid #00b894;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  height: 10vh;
+  min-height: 10vh;
+  max-height: 10vh;
+}
+
+.sentence-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.sentence-content {
   flex: 1;
 }
 
-.no-content p {
-  margin: 0;
-  font-size: 16px;
+.sentence-text {
+  font-size: 1.1vw;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.2vh;
+  line-height: 1.2;
 }
 
+.sentence-translation {
+  font-size: 0.9vw;
+  color: #7f8c8d;
+  line-height: 1.2;
+}
+
+.sentence-audio-btn {
+  background: linear-gradient(45deg, #00b894, #00a085);
+  color: white;
+  border: none;
+  width: 2.5vw;
+  height: 2.5vw;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1vw;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+  margin-left: 1vw;
+}
+
+.sentence-audio-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
+}
+
+/* 无内容状态 */
+.no-content {
+  text-align: center;
+  color: #7f8c8d;
+  font-size: 1.2vw;
+  margin-top: 5vh;
+}
+
+/* 加载状态 */
 .loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  height: 92vh;
   color: white;
 }
 
 .loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top: 4px solid white;
+  width: 4vw;
+  height: 4vw;
+  border: 0.5vw solid rgba(255, 255, 255, 0.3);
+  border-top: 0.5vw solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  margin-bottom: 2vh;
 }
 
 @keyframes spin {
@@ -981,181 +1126,212 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
+.loading p {
+  font-size: 1.2vw;
+  margin: 0;
+}
+
+/* 错误状态 */
 .error {
-  text-align: center;
-  color: white;
-  padding: 40px;
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 92vh;
+  color: white;
+  text-align: center;
+}
+
+.error p {
+  font-size: 1.5vw;
+  margin-bottom: 2vh;
 }
 
 .retry-btn {
-  margin-top: 20px;
-  padding: 12px 24px;
-  background: white;
-  color: #667eea;
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+  color: white;
   border: none;
+  padding: 1.5vh 3vw;
   border-radius: 8px;
-  font-size: 16px;
   cursor: pointer;
+  font-size: 1vw;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+/* 单词列表弹窗 */
+.word-list-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.word-list-content {
+  width: 60vw;
+  height: 70vh;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.word-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2vh 2vw;
+  background: linear-gradient(45deg, #74b9ff, #0984e3);
+  color: white;
+}
+
+.word-list-header h3 {
+  margin: 0;
+  font-size: 1.5vw;
+  font-weight: 700;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2vw;
+  cursor: pointer;
+  width: 2.5vw;
+  height: 2.5vw;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
 }
 
- .retry-btn:hover {
-   transform: translateY(-2px);
-   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
- }
- 
- /* 单词列表弹窗样式 */
- .word-list-modal {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.5);
-   display: flex;
-   justify-content: center;
-   align-items: center;
-   z-index: 1000;
- }
- 
- .word-list-content {
-   background: white;
-   border-radius: 16px;
-   width: 98%;
-   max-width: 900px;
-   max-height: 85vh;
-   overflow: hidden;
-   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
- }
- 
- .word-list-header {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   padding: 20px 10px;
-   border-bottom: 2px solid #e1e5e9;
-   background: #f8f9ff;
- }
- 
- .word-list-header h3 {
-   margin: 0;
-   color: #333;
-   font-size: 20px;
- }
- 
- .close-btn {
-   background: none;
-   border: none;
-   font-size: 24px;
-   color: #666;
-   cursor: pointer;
-   padding: 0;
-   width: 30px;
-   height: 30px;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   border-radius: 50%;
-   transition: all 0.3s ease;
- }
- 
- .close-btn:hover {
-   background: #e1e5e9;
-   color: #333;
- }
- 
- .word-list-search {
-   padding: 20px 10px;
-   border-bottom: 1px solid #e1e5e9;
- }
- 
- .search-input {
-   width: 100%;
-   padding: 12px 16px;
-   border: 2px solid #e1e5e9;
-   border-radius: 8px;
-   font-size: 16px;
-   outline: none;
-   transition: border-color 0.3s ease;
- }
- 
- .search-input:focus {
-   border-color: #667eea;
- }
- 
- .word-list-body {
-   max-height: 400px;
-   overflow-y: auto;
-   padding: 0;
- }
- 
- .word-grid {
-   display: grid;
-   grid-template-columns: 1fr 1fr;
-   gap: 8px;
-   padding: 10px;
- }
- 
- .word-grid-item {
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   padding: 12px 8px;
-   background: #f8f9fa;
-   border: 1px solid #e1e5e9;
-   border-radius: 8px;
-   cursor: pointer;
-   transition: all 0.3s ease;
-   font-size: 16px;
-   font-weight: 500;
-   color: #333;
-   text-align: center;
-   min-height: 44px;
- }
- 
- .word-grid-item:hover {
-   background: #e3f2fd;
-   border-color: #2196f3;
-   transform: translateY(-2px);
-   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
- }
- 
- .word-grid-item.current-word {
-   background: #2196f3;
-   color: white;
-   border-color: #1976d2;
-   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
- }
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .main-content {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .top-nav {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-  
-  .nav-controls {
-    order: -1;
-  }
-  
+.word-list-search {
+  padding: 2vh 2vw;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 1.5vh 1.5vw;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1vw;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #74b9ff;
+  box-shadow: 0 0 0 3px rgba(116, 185, 255, 0.1);
+}
+
+.word-list-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2vh 2vw;
+}
+
+.word-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1vw;
+}
+
+.word-grid-item {
+  padding: 1.5vh 1vw;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 1vw;
+  font-weight: 600;
+  color: #495057;
+  transition: all 0.3s ease;
+}
+
+.word-grid-item:hover {
+  background: #74b9ff;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(116, 185, 255, 0.3);
+}
+
+.word-grid-item.current-word {
+  background: linear-gradient(45deg, #00b894, #00a085);
+  color: white;
+  border-color: #00a085;
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
   .word-text {
-    font-size: 36px;
+    font-size: 2.2vw;
   }
   
-  .phonetic-item {
+  .phonetic-text {
+    font-size: 1.1vw;
+  }
+  
+  .meaning-content {
+    font-size: 1vw;
+  }
+  
+  .phrase-text {
+    font-size: 1.1vw;
+  }
+  
+  .sentence-text {
+    font-size: 1vw;
+  }
+}
+
+@media (max-width: 900px) {
+  .main-content {
     flex-direction: column;
-    gap: 10px;
+    height: auto;
+    min-height: calc(100% - 10vh);
+    padding: 2vh 2vw;
+    max-width: 100vw;
+  }
+  
+  .word-section {
+    width: 100%;
+    height: 50vh;
+  }
+  
+  .content-section {
+    width: 100%;
+    height: 42vh;
+  }
+  
+  .phrase-section {
+    height: 18vh;
+  }
+  
+  .sentence-section {
+    height: 22vh;
   }
 }
 </style>
