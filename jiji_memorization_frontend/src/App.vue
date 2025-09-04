@@ -22,7 +22,7 @@
                 ref="avatarImg"
               />
             </div>
-            <span class="username">{{ authStore.currentUser?.username }}</span>
+            <span class="username">{{ authStore.currentUser?.nickname || authStore.currentUser?.username }}</span>
           </div>
           <div class="user-menu" :class="{ 'active': showUserMenu }">
             <button @click="toggleUserMenu" class="menu-trigger">
@@ -39,13 +39,6 @@
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
                 个人资料
-              </div>
-              <div class="menu-item" @click="uploadAvatar">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
-                  <circle cx="12" cy="13" r="3"></circle>
-                </svg>
-                更换头像
               </div>
               <div class="menu-item" @click="goToSettings">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -186,8 +179,7 @@ export default {
     // 跳转到个人资料
     const goToProfile = () => {
       showUserMenu.value = false
-      // 这里可以跳转到个人资料页面
-      console.log('跳转到个人资料')
+      router.push('/profile')
     }
     
     // 跳转到设置
@@ -300,6 +292,8 @@ export default {
         if (uploadResponse.data.status === 'success') {
           // 更新本地用户信息
           authStore.currentUser.avatar = uploadResponse.data.avatarPath
+          // 更新localStorage中的用户信息
+          authStore.setUser(authStore.currentUser)
           alert('头像上传成功！')
         } else {
           alert('头像上传失败: ' + uploadResponse.data.message)

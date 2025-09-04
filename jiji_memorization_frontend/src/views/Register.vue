@@ -20,6 +20,18 @@
         </div>
         
         <div class="form-group">
+          <label for="nickname">昵称</label>
+          <input
+            id="nickname"
+            v-model="registerForm.nickname"
+            type="text"
+            placeholder="请输入昵称"
+            required
+            :disabled="loading"
+          />
+        </div>
+        
+        <div class="form-group">
           <label for="email">邮箱</label>
           <input
             id="email"
@@ -100,6 +112,7 @@ export default {
     
     const registerForm = reactive({
       username: '',
+      nickname: '',
       email: '',
       password: '',
       confirmPassword: ''
@@ -107,7 +120,7 @@ export default {
     
     const handleRegister = async () => {
       // 表单验证
-      if (!registerForm.username || !registerForm.email || !registerForm.password || !registerForm.confirmPassword) {
+      if (!registerForm.username || !registerForm.nickname || !registerForm.email || !registerForm.password || !registerForm.confirmPassword) {
         errorMessage.value = '请填写完整的注册信息'
         return
       }
@@ -129,6 +142,7 @@ export default {
       try {
         const response = await api.post('/api/auth/register', {
           username: registerForm.username,
+          nickname: registerForm.nickname,
           email: registerForm.email,
           password: registerForm.password
         })

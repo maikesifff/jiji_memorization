@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -21,6 +22,8 @@ public class UserController {
     
     @Autowired
     private UserService userService;
+    
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     
     // 创建用户
     @PostMapping
@@ -39,14 +42,16 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
             response.put("message", "用户创建成功");
-            response.put("user", Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "email", user.getEmail(),
-                "nickname", user.getNickname(),
-                "status", user.getStatus(),
-                "createdAt", user.getCreatedAt()
-            ));
+            
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
+            userInfo.put("username", user.getUsername());
+            userInfo.put("email", user.getEmail());
+            userInfo.put("nickname", user.getNickname());
+            userInfo.put("status", user.getStatus());
+            userInfo.put("createdAt", user.getCreatedAt());
+            
+            response.put("user", userInfo);
             
             return ResponseEntity.ok(response);
             
@@ -112,17 +117,19 @@ public class UserController {
                 Map<String, Object> response = new HashMap<>();
                 response.put("status", "success");
                 response.put("message", "获取用户信息成功");
-                response.put("user", Map.of(
-                    "id", user.getId(),
-                    "username", user.getUsername(),
-                    "email", user.getEmail(),
-                    "nickname", user.getNickname(),
-                    "avatar", user.getAvatar(),
-                    "status", user.getStatus(),
-                    "createdAt", user.getCreatedAt(),
-                    "updatedAt", user.getUpdatedAt(),
-                    "lastLoginAt", user.getLastLoginAt()
-                ));
+                
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("id", user.getId());
+                userInfo.put("username", user.getUsername());
+                userInfo.put("email", user.getEmail());
+                userInfo.put("nickname", user.getNickname());
+                userInfo.put("avatar", user.getAvatar());
+                userInfo.put("status", user.getStatus());
+                userInfo.put("createdAt", user.getCreatedAt());
+                userInfo.put("updatedAt", user.getUpdatedAt());
+                userInfo.put("lastLoginAt", user.getLastLoginAt());
+                
+                response.put("user", userInfo);
                 
                 return ResponseEntity.ok(response);
             } else {
@@ -151,14 +158,16 @@ public class UserController {
                 Map<String, Object> response = new HashMap<>();
                 response.put("status", "success");
                 response.put("message", "获取用户信息成功");
-                response.put("user", Map.of(
-                    "id", user.getId(),
-                    "username", user.getUsername(),
-                    "email", user.getEmail(),
-                    "nickname", user.getNickname(),
-                    "status", user.getStatus(),
-                    "createdAt", user.getCreatedAt()
-                ));
+                
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("id", user.getId());
+                userInfo.put("username", user.getUsername());
+                userInfo.put("email", user.getEmail());
+                userInfo.put("nickname", user.getNickname());
+                userInfo.put("status", user.getStatus());
+                userInfo.put("createdAt", user.getCreatedAt());
+                
+                response.put("user", userInfo);
                 
                 return ResponseEntity.ok(response);
             } else {
@@ -227,9 +236,11 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
             response.put("message", "获取用户统计信息成功");
-            response.put("stats", Map.of(
-                "activeUserCount", activeUserCount
-            ));
+            
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("activeUserCount", activeUserCount);
+            
+            response.put("stats", stats);
             
             return ResponseEntity.ok(response);
             
@@ -350,6 +361,165 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("status", "error");
             response.put("message", "头像更新失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    // 更新用户基本信息
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String nickname = request.get("nickname");
+            
+            if (email == null || email.trim().isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "邮箱不能为空");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            Optional<User> userOpt = userService.findById(id);
+            if (!userOpt.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "用户不存在");
+                return ResponseEntity.notFound().build();
+            }
+            
+            User user = userOpt.get();
+            
+            // 检查邮箱是否已被其他用户使用
+            if (!user.getEmail().equals(email)) {
+                if (userService.existsByEmail(email)) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("status", "error");
+                    response.put("message", "邮箱已被使用");
+                    return ResponseEntity.badRequest().body(response);
+                }
+                user.setEmail(email);
+            }
+            
+            user.setNickname(nickname);
+            User updatedUser = userService.updateUser(user);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "用户信息更新成功");
+            
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", updatedUser.getId());
+            userInfo.put("username", updatedUser.getUsername());
+            userInfo.put("email", updatedUser.getEmail());
+            userInfo.put("nickname", updatedUser.getNickname());
+            userInfo.put("avatar", updatedUser.getAvatar());
+            userInfo.put("status", updatedUser.getStatus());
+            userInfo.put("createdAt", updatedUser.getCreatedAt());
+            userInfo.put("updatedAt", updatedUser.getUpdatedAt());
+            userInfo.put("lastLoginAt", updatedUser.getLastLoginAt());
+            
+            response.put("user", userInfo);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "用户信息更新失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    // 修改用户密码
+    @PutMapping("/{id}/password")
+    public ResponseEntity<?> changePassword(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String currentPassword = request.get("currentPassword");
+            String newPassword = request.get("newPassword");
+            
+            if (currentPassword == null || currentPassword.trim().isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "当前密码不能为空");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "新密码不能为空");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            if (newPassword.length() < 6) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "新密码长度不能少于6位");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            Optional<User> userOpt = userService.findById(id);
+            if (!userOpt.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "用户不存在");
+                return ResponseEntity.notFound().build();
+            }
+            
+            User user = userOpt.get();
+            
+            // 验证当前密码（使用BCrypt比较）
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "当前密码不正确");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            // 加密新密码并更新
+            String encodedNewPassword = passwordEncoder.encode(newPassword);
+            user.setPassword(encodedNewPassword);
+            userService.updateUser(user);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "密码修改成功");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "密码修改失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    // 获取用户统计信息
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<?> getUserStats(@PathVariable Long id) {
+        try {
+            Optional<User> userOpt = userService.findById(id);
+            if (!userOpt.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "用户不存在");
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 获取用户统计信息
+            Map<String, Object> stats = userService.getUserStats(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("data", stats);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "获取统计信息失败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }

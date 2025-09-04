@@ -16,7 +16,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -167,5 +169,42 @@ public class UserService {
         
         System.out.println("头像文件保存成功: " + fileName);
         return fileName;
+    }
+    
+    // 获取用户统计信息
+    public Map<String, Object> getUserStats(Long userId) {
+        Map<String, Object> stats = new HashMap<>();
+        
+        try {
+            // 这里需要根据实际的业务逻辑来统计
+            // 暂时返回0值，等有实际数据后再实现具体统计逻辑
+            
+            // 已学单词数量 - 可以通过UnitWord表统计
+            long totalWords = 0; // 需要实现具体统计逻辑
+            
+            // 正确答题数量 - 可以通过ErrorRecord表统计
+            long correctAnswers = 0; // 需要实现具体统计逻辑
+            
+            // 学习天数 - 可以通过ErrorRecord表统计
+            long studyDays = 0; // 需要实现具体统计逻辑
+            
+            // 连续学习天数 - 可以通过ErrorRecord表统计
+            long currentStreak = 0; // 需要实现具体统计逻辑
+            
+            stats.put("totalWords", totalWords);
+            stats.put("correctAnswers", correctAnswers);
+            stats.put("studyDays", studyDays);
+            stats.put("currentStreak", currentStreak);
+            
+        } catch (Exception e) {
+            System.err.println("获取用户统计信息失败: " + e.getMessage());
+            // 返回默认值
+            stats.put("totalWords", 0);
+            stats.put("correctAnswers", 0);
+            stats.put("studyDays", 0);
+            stats.put("currentStreak", 0);
+        }
+        
+        return stats;
     }
 }

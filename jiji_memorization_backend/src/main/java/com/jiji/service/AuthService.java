@@ -74,7 +74,7 @@ public class AuthService {
         return result;
     }
     
-    public Map<String, Object> register(String username, String password, String email) {
+    public Map<String, Object> register(String username, String nickname, String password, String email) {
         Map<String, Object> result = new HashMap<>();
         
         try {
@@ -97,6 +97,7 @@ public class AuthService {
             
             // 创建新用户
             User newUser = new User(username, encodedPassword, email);
+            newUser.setNickname(nickname);
             newUser.setStatus(UserStatus.ACTIVE);
             
             User savedUser = userRepository.save(newUser);

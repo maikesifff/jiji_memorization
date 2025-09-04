@@ -38,17 +38,18 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> request) {
         String username = request.get("username");
+        String nickname = request.get("nickname");
         String password = request.get("password");
         String email = request.get("email");
         
-        if (username == null || password == null || email == null) {
+        if (username == null || nickname == null || password == null || email == null) {
             return ResponseEntity.badRequest().body(Map.of(
                 "status", "error",
-                "message", "用户名、密码和邮箱不能为空"
+                "message", "用户名、昵称、密码和邮箱不能为空"
             ));
         }
         
-        Map<String, Object> result = authService.register(username, password, email);
+        Map<String, Object> result = authService.register(username, nickname, password, email);
         
         if ("success".equals(result.get("status"))) {
             return ResponseEntity.ok(result);
