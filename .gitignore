@@ -2,6 +2,7 @@
 jiji_memorization_backend/target/
 jiji_memorization_backend/.idea/
 jiji_memorization_backend/*.iml
+jiji_memorization_backend/uploads/
 
 # 前端
 jiji_memorization_frontend/node_modules/
