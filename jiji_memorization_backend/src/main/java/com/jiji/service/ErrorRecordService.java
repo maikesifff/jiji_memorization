@@ -2,161 +2,143 @@ package com.jiji.service;
 
 import com.jiji.entity.ErrorRecord;
 import com.jiji.repository.ErrorRecordRepository;
+import com.jiji.repository.UnitWordRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class ErrorRecordService {
     
     @Autowired
     private ErrorRecordRepository errorRecordRepository;
     
-    // 获取所有错误记录
-    public List<ErrorRecord> getAllErrorRecords() {
-        return errorRecordRepository.findAll();
+    @Autowired
+    private UnitWordRepository unitWordRepository;
+    
+    // 记录答题结果
+    public ErrorRecord recordAnswer(Long userId, Long unitWordId, boolean isCorrect) {
+        // 查找或创建记录
+        Optional<ErrorRecord> existingRecord = errorRecordRepository.findByUserIdAndUnitWordId(userId, unitWordId);
+        ErrorRecord record;
+        
+        if (existingRecord.isPresent()) {
+            record = existingRecord.get();
+        } else {
+            record = new ErrorRecord(userId, unitWordId);
+        }
+        
+        // 更新记录
+        if (isCorrect) {
+            record.recordCorrectAnswer();
+        } else {
+            record.recordIncorrectAnswer();
+        }
+        
+        return errorRecordRepository.save(record);
     }
     
-    // 根据ID获取错误记录
-    public Optional<ErrorRecord> getErrorRecordById(Long id) {
-        return errorRecordRepository.findById(id);
+    // 根据用户ID和单词ID记录答题结果（需要先查找unitWordId）
+    public ErrorRecord recordAnswerByWordId(Long userId, Long wordId, Long unitId, boolean isCorrect) {
+        // 查找unitWordId
+        Long unitWordId = unitWordRepository.findByUnitId(unitId).stream()
+                .filter(uw -> uw.getWordId().equals(wordId))
+                .findFirst()
+                .map(uw -> uw.getId())
+                .orElse(null);
+        
+        if (unitWordId == null) {
+            throw new RuntimeException("未找到单元单词关联: unitId=" + unitId + ", wordId=" + wordId);
+        }
+        
+        return recordAnswer(userId, unitWordId, isCorrect);
     }
     
-    // 根据用户ID获取错误记录
-    public List<ErrorRecord> getErrorRecordsByUserId(Long userId) {
-        return errorRecordRepository.findByUserId(userId);
-    }
-    
-    // 根据单元单词ID获取错误记录
-    public List<ErrorRecord> getErrorRecordsByUnitWordId(Long unitWordId) {
-        return errorRecordRepository.findByUnitWordId(unitWordId);
-    }
-
-    // 根据用户ID和单元ID获取错误记录
-    public List<ErrorRecord> getErrorRecordsByUserIdAndUnitId(Long userId, Long unitId) {
-        return errorRecordRepository.findByUserIdAndUnitId(userId, unitId);
-    }
-    
-    // 根据用户ID和单元单词ID获取错误记录
-    public Optional<ErrorRecord> getErrorRecordByUserIdAndUnitWordId(Long userId, Long unitWordId) {
+    // 获取用户的答题记录
+    public Optional<ErrorRecord> getRecord(Long userId, Long unitWordId) {
         return errorRecordRepository.findByUserIdAndUnitWordId(userId, unitWordId);
     }
     
-    // 创建新的错误记录
-    public ErrorRecord createErrorRecord(ErrorRecord errorRecord) {
-        errorRecord.setCreatedAt(LocalDateTime.now());
-        errorRecord.setUpdatedAt(LocalDateTime.now());
-        return errorRecordRepository.save(errorRecord);
+    // 获取用户的所有答题记录
+    public List<ErrorRecord> getUserRecords(Long userId) {
+        return errorRecordRepository.findByUserId(userId);
     }
     
-    // 更新错误记录
-    public ErrorRecord updateErrorRecord(Long id, ErrorRecord errorRecordDetails) {
-        ErrorRecord errorRecord = errorRecordRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("错误记录不存在，ID: " + id));
+    // 获取用户在指定单元的答题记录
+    public List<ErrorRecord> getUserRecordsByUnit(Long userId, Long unitId) {
+        return errorRecordRepository.findByUserIdAndUnitId(userId, unitId);
+    }
+    
+    // 获取用户统计信息
+    public Map<String, Object> getUserStats(Long userId) {
+        Map<String, Object> stats = new HashMap<>();
         
-        errorRecord.setUserId(errorRecordDetails.getUserId());
-        errorRecord.setUnitWordId(errorRecordDetails.getUnitWordId());
-        errorRecord.setErrorCount(errorRecordDetails.getErrorCount());
-        errorRecord.setCorrectCount(errorRecordDetails.getCorrectCount());
-        errorRecord.setLastAnswerCorrect(errorRecordDetails.getLastAnswerCorrect());
-        errorRecord.setLastErrorAt(errorRecordDetails.getLastErrorAt());
-        errorRecord.setUpdatedAt(LocalDateTime.now());
+        Long correctCount = errorRecordRepository.countCorrectWordsByUserId(userId);
+        Long incorrectCount = errorRecordRepository.countIncorrectWordsByUserId(userId);
         
-        return errorRecordRepository.save(errorRecord);
-    }
-    
-    // 删除错误记录
-    public void deleteErrorRecord(Long id) {
-        if (!errorRecordRepository.existsById(id)) {
-            throw new RuntimeException("错误记录不存在，ID: " + id);
-        }
-        errorRecordRepository.deleteById(id);
-    }
-    
-    // 根据用户ID删除所有错误记录
-    public void deleteErrorRecordsByUserId(Long userId) {
-        List<ErrorRecord> errorRecords = errorRecordRepository.findByUserId(userId);
-        errorRecordRepository.deleteAll(errorRecords);
-    }
-    
-    // 根据单元单词ID删除所有错误记录
-    public void deleteErrorRecordsByUnitWordId(Long unitWordId) {
-        List<ErrorRecord> errorRecords = errorRecordRepository.findByUnitWordId(unitWordId);
-        errorRecordRepository.deleteAll(errorRecords);
-    }
-    
-    // 获取错误记录总数
-    public long getErrorRecordCount() {
-        return errorRecordRepository.count();
-    }
-    
-    // 根据用户ID获取错误记录总数
-    public long getErrorRecordCountByUserId(Long userId) {
-        return errorRecordRepository.findByUserId(userId).size();
-    }
-    
-    // 根据单元单词ID获取错误记录总数
-    public long getErrorRecordCountByUnitWordId(Long unitWordId) {
-        return errorRecordRepository.findByUnitWordId(unitWordId).size();
-    }
-    
-    // 增加错误次数
-    public ErrorRecord incrementErrorCount(Long userId, Long unitWordId) {
-        Optional<ErrorRecord> existingRecord = errorRecordRepository.findByUserIdAndUnitWordId(userId, unitWordId);
+        stats.put("correctWords", correctCount);
+        stats.put("incorrectWords", incorrectCount);
+        stats.put("totalWords", correctCount + incorrectCount);
         
-        if (existingRecord.isPresent()) {
-            ErrorRecord record = existingRecord.get();
-            record.setErrorCount(record.getErrorCount() + 1);
-            record.setLastErrorAt(LocalDateTime.now());
-            record.setLastAnswerCorrect(false);
-            record.setUpdatedAt(LocalDateTime.now());
-            return errorRecordRepository.save(record);
-        } else {
-            ErrorRecord newRecord = new ErrorRecord();
-            newRecord.setUserId(userId);
-            newRecord.setUnitWordId(unitWordId);
-            newRecord.setErrorCount(1);
-            newRecord.setCorrectCount(0);
-            newRecord.setLastAnswerCorrect(false);
-            newRecord.setLastErrorAt(LocalDateTime.now());
-            newRecord.setCreatedAt(LocalDateTime.now());
-            newRecord.setUpdatedAt(LocalDateTime.now());
-            return errorRecordRepository.save(newRecord);
-        }
+        return stats;
     }
-
-    // 增加正确次数
-    public ErrorRecord incrementCorrectCount(Long userId, Long unitWordId) {
-        Optional<ErrorRecord> existingRecord = errorRecordRepository.findByUserIdAndUnitWordId(userId, unitWordId);
+    
+    // 获取用户在指定单元的统计信息
+    public Map<String, Object> getUserUnitStats(Long userId, Long unitId) {
+        Map<String, Object> stats = new HashMap<>();
         
-        if (existingRecord.isPresent()) {
-            ErrorRecord record = existingRecord.get();
-            record.setCorrectCount(record.getCorrectCount() + 1);
-            record.setLastAnswerCorrect(true);
-            record.setUpdatedAt(LocalDateTime.now());
-            return errorRecordRepository.save(record);
-        } else {
-            ErrorRecord newRecord = new ErrorRecord();
-            newRecord.setUserId(userId);
-            newRecord.setUnitWordId(unitWordId);
-            newRecord.setErrorCount(0);
-            newRecord.setCorrectCount(1);
-            newRecord.setLastAnswerCorrect(true);
-            newRecord.setCreatedAt(LocalDateTime.now());
-            newRecord.setUpdatedAt(LocalDateTime.now());
-            return errorRecordRepository.save(newRecord);
-        }
+        Long correctCount = errorRecordRepository.countCorrectWordsByUserIdAndUnitId(userId, unitId);
+        Long incorrectCount = errorRecordRepository.countIncorrectWordsByUserIdAndUnitId(userId, unitId);
+        
+        stats.put("correctWords", correctCount);
+        stats.put("incorrectWords", incorrectCount);
+        stats.put("totalWords", correctCount + incorrectCount);
+        
+        return stats;
     }
-
-    // 记录答题结果（统一方法）
-    public ErrorRecord recordAnswer(Long userId, Long unitWordId, boolean isCorrect) {
-        if (isCorrect) {
-            return incrementCorrectCount(userId, unitWordId);
-        } else {
-            return incrementErrorCount(userId, unitWordId);
-        }
+    
+    // 检查用户是否已经答对过某个单词
+    public boolean isWordCorrect(Long userId, Long unitWordId) {
+        return errorRecordRepository.isWordCorrectByUser(userId, unitWordId);
+    }
+    
+    // 检查用户是否已经答错过某个单词
+    public boolean isWordIncorrect(Long userId, Long unitWordId) {
+        return errorRecordRepository.isWordIncorrectByUser(userId, unitWordId);
+    }
+    
+    // 获取用户答对的单词列表（用于排序）
+    public List<Long> getCorrectWordIds(Long userId, Long unitId) {
+        return errorRecordRepository.findByUserIdAndUnitId(userId, unitId).stream()
+                .filter(ErrorRecord::isCorrect)
+                .map(ErrorRecord::getUnitWordId)
+                .toList();
+    }
+    
+    // 获取用户答错的单词列表（用于排序）
+    public List<Long> getIncorrectWordIds(Long userId, Long unitId) {
+        return errorRecordRepository.findByUserIdAndUnitId(userId, unitId).stream()
+                .filter(record -> !record.isCorrect())
+                .map(ErrorRecord::getUnitWordId)
+                .toList();
+    }
+    
+    // 删除用户的答题记录
+    public void deleteUserRecord(Long userId, Long unitWordId) {
+        errorRecordRepository.findByUserIdAndUnitWordId(userId, unitWordId)
+                .ifPresent(errorRecordRepository::delete);
+    }
+    
+    // 删除用户的所有答题记录
+    public void deleteAllUserRecords(Long userId) {
+        errorRecordRepository.findByUserId(userId)
+                .forEach(errorRecordRepository::delete);
     }
 }

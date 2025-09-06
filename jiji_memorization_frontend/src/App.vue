@@ -9,6 +9,8 @@
         
         <div class="nav-menu">
           <router-link to="/" class="nav-link">主页</router-link>
+          <router-link to="/vocabulary" class="nav-link">生词本</router-link>
+          <router-link to="/reports" class="nav-link">成绩报告</router-link>
           <router-link to="/about" class="nav-link">关于</router-link>
         </div>
         
@@ -185,8 +187,7 @@ export default {
     // 跳转到设置
     const goToSettings = () => {
       showUserMenu.value = false
-      // 这里可以跳转到设置页面
-      console.log('跳转到设置')
+      router.push('/settings')
     }
     
     // 处理头像加载错误

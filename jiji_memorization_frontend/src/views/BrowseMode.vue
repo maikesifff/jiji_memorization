@@ -9,10 +9,13 @@
         <h2>{{ unit?.name }}</h2>
         <span class="progress">{{ currentIndex + 1 }} / {{ words.length }}</span>
         <div class="keyboard-hints">
-          <span>← → 翻页（循环） | ESC 返回</span>
+          <span class="mode-title">浏览学习</span>
         </div>
       </div>
              <div class="nav-controls">
+         <button @click="showKeyboardShortcuts = true" class="shortcuts-btn" title="键盘快捷键">
+           ?
+         </button>
          <button 
            @click="showWordList"
            class="nav-btn word-list-btn"
@@ -39,7 +42,21 @@
       <!-- 左侧：单词信息 -->
       <div class="word-section">
         <div class="word-card">
+          <div class="word-header">
           <h1 class="word-text">{{ currentWord.word }}</h1>
+            <div class="word-actions">
+              <button 
+                @click="toggleVocabularyNotebook" 
+                class="vocab-btn"
+                :class="{ 'in-notebook': currentWord.isInNotebook }"
+                :title="currentWord.isInNotebook ? '从生词本中移除' : '添加到生词本'"
+              >
+                <span v-if="currentWord.isInNotebook">📚</span>
+                <span v-else>📖</span>
+                {{ currentWord.isInNotebook ? '已收藏' : '收藏' }}
+              </button>
+            </div>
+          </div>
           
                      <!-- 音标区域 -->
            <div class="phonetic-section">
@@ -192,11 +209,63 @@
        </div>
      </div>
    </div>
+
+   <!-- 键盘快捷键弹窗 -->
+   <div v-if="showKeyboardShortcuts" class="modal-overlay" @click="showKeyboardShortcuts = false">
+     <div class="modal-content shortcuts-modal" @click.stop>
+       <h2>键盘快捷键</h2>
+       <div class="shortcuts-content">
+         <div class="shortcut-section">
+           <h3>通用快捷键</h3>
+           <div class="shortcut-item">
+             <span class="key">ESC</span>
+             <span class="description">返回主页</span>
+           </div>
+         </div>
+         
+         <div class="shortcut-section">
+           <h3>浏览学习</h3>
+           <div class="shortcut-item">
+             <span class="key">A / ←</span>
+             <span class="description">上一页</span>
+           </div>
+           <div class="shortcut-item">
+             <span class="key">D / →</span>
+             <span class="description">下一页</span>
+           </div>
+           <div class="shortcut-item">
+             <span class="key">Q</span>
+             <span class="description">美式发音</span>
+           </div>
+           <div class="shortcut-item">
+             <span class="key">E</span>
+             <span class="description">英式发音</span>
+           </div>
+           <div class="shortcut-item">
+             <span class="key">U I O</span>
+             <span class="description">词组发音（1-3）</span>
+           </div>
+           <div class="shortcut-item">
+             <span class="key">J K L</span>
+             <span class="description">例句发音（1-3）</span>
+           </div>
+           <div class="shortcut-item">
+             <span class="key">V</span>
+             <span class="description">添加/移除生词本</span>
+           </div>
+         </div>
+       </div>
+       <div class="modal-actions">
+         <button @click="showKeyboardShortcuts = false" class="modal-btn primary">知道了</button>
+       </div>
+     </div>
+   </div>
  </template>
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/axios'
 
 export default {
@@ -204,6 +273,7 @@ export default {
   setup() {
     const route = useRoute()
     const router = useRouter()
+    const authStore = useAuthStore()
     
     const unit = ref(null)
     const words = ref([])
@@ -215,6 +285,9 @@ export default {
      // 单词列表弹窗相关
      const showWordListModal = ref(false)
      const wordListSearchTerm = ref('')
+     
+     // 键盘快捷键弹窗
+     const showKeyboardShortcuts = ref(false)
 
          // 当前单词的计算属性
      const currentWord = computed(() => {
@@ -305,13 +378,19 @@ export default {
         const wordsWithDetails = await Promise.all(
           allUnitWords.map(async (unitWord, index) => {
             try {
-                             // 获取词组、例句和词性释义
+                             // 获取词组、例句、词性释义和生词本状态
                console.log(`Fetching details for word ${unitWord.wordId} (${unitWord.wordText})`)
                
-               const [phrasesResponse, sentencesResponse, meaningsResponse] = await Promise.all([
+               const [phrasesResponse, sentencesResponse, meaningsResponse, notebookResponse] = await Promise.all([
                  api.get(`/api/phrases/word/${unitWord.wordId}`),
                  api.get(`/api/sentences/word/${unitWord.wordId}`),
-                 api.get(`/api/meanings/word/${unitWord.wordId}`)
+                 api.get(`/api/meanings/word/${unitWord.wordId}`),
+                 api.get(`/api/vocabulary-notebook/check`, {
+                   params: {
+                     userId: authStore.currentUser.id,
+                     wordId: unitWord.wordId
+                   }
+                 })
                ])
                
                const phrases = phrasesResponse.data
@@ -322,10 +401,14 @@ export default {
                  meanings = meanings.data // 提取实际的数组数据
                }
                
+               // 处理生词本状态
+               const isInNotebook = notebookResponse.data?.isInNotebook || false
+               
                console.log(`Word ${unitWord.wordText}:`, {
                  phrases: phrases,
                  sentences: sentences,
-                 meanings: meanings
+                 meanings: meanings,
+                 isInNotebook: isInNotebook
                })
                
                // 调试：检查词性释义数据结构
@@ -342,7 +425,8 @@ export default {
                   pronUk: unitWord.pronUk, // 英音发音
                   phrases,
                   sentences,
-                  meanings
+                  meanings,
+                  isInNotebook // 生词本状态
                 }
             } catch (err) {
               console.error(`Failed to get details for word ${unitWord.wordId}:`, err)
@@ -355,7 +439,8 @@ export default {
                     pronUk: unitWord.pronUk || null,
                     phrases: [],
                     sentences: [],
-                    meanings: []
+                    meanings: [],
+                    isInNotebook: false // 默认不在生词本中
                   }
             }
           })
@@ -367,6 +452,57 @@ export default {
         console.error('Failed to fetch unit words:', err)
         error.value = `获取单词列表失败: ${err.message || '未知错误'}`
         loading.value = false
+      }
+    }
+
+    // 切换生词本状态
+    const toggleVocabularyNotebook = async () => {
+      if (!currentWord.value || !authStore.currentUser) return
+      
+      const word = currentWord.value
+      const isCurrentlyInNotebook = word.isInNotebook
+      
+      try {
+        if (isCurrentlyInNotebook) {
+          // 从生词本中移除
+          await api.delete('/api/vocabulary-notebook/remove', {
+            params: {
+              userId: authStore.currentUser.id,
+              wordId: word.wordId
+            }
+          })
+          
+          // 更新本地状态
+          word.isInNotebook = false
+          
+          // 更新words数组中的对应项
+          const wordIndex = words.value.findIndex(w => w.wordId === word.wordId)
+          if (wordIndex !== -1) {
+            words.value[wordIndex].isInNotebook = false
+          }
+          
+          console.log(`Word "${word.word}" removed from vocabulary notebook`)
+        } else {
+          // 添加到生词本
+          await api.post('/api/vocabulary-notebook/add', {
+            userId: authStore.currentUser.id,
+            wordId: word.wordId
+          })
+          
+          // 更新本地状态
+          word.isInNotebook = true
+          
+          // 更新words数组中的对应项
+          const wordIndex = words.value.findIndex(w => w.wordId === word.wordId)
+          if (wordIndex !== -1) {
+            words.value[wordIndex].isInNotebook = true
+          }
+          
+          console.log(`Word "${word.word}" added to vocabulary notebook`)
+        }
+      } catch (error) {
+        console.error('Failed to toggle vocabulary notebook:', error)
+        alert(`操作失败: ${error.response?.data?.message || error.message || '未知错误'}`)
       }
     }
 
@@ -568,18 +704,72 @@ export default {
     
     // 键盘快捷键处理
     const handleKeydown = (event) => {
-      switch (event.key) {
-        case 'ArrowLeft':
+      switch (event.key.toLowerCase()) {
+        case 'arrowleft':
+        case 'a':
           event.preventDefault()
           previousPage()
           break
-        case 'ArrowRight':
+        case 'arrowright':
+        case 'd':
           event.preventDefault()
           nextPage()
           break
-        case 'Escape':
+        case 'escape':
           event.preventDefault()
           goBack()
+          break
+        case 'q':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.pronUs) {
+            playAudio('american')
+          }
+          break
+        case 'e':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.pronUk) {
+            playAudio('british')
+          }
+          break
+        case 'u':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.phrases && currentWord.value.phrases[0]) {
+            playPhraseAudio(currentWord.value.phrases[0].phraseText)
+          }
+          break
+        case 'i':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.phrases && currentWord.value.phrases[1]) {
+            playPhraseAudio(currentWord.value.phrases[1].phraseText)
+          }
+          break
+        case 'o':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.phrases && currentWord.value.phrases[2]) {
+            playPhraseAudio(currentWord.value.phrases[2].phraseText)
+          }
+          break
+        case 'j':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.sentences && currentWord.value.sentences[0]) {
+            playSentenceAudio(currentWord.value.sentences[0].sentenceText)
+          }
+          break
+        case 'k':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.sentences && currentWord.value.sentences[1]) {
+            playSentenceAudio(currentWord.value.sentences[1].sentenceText)
+          }
+          break
+        case 'l':
+          event.preventDefault()
+          if (currentWord.value && currentWord.value.sentences && currentWord.value.sentences[2]) {
+            playSentenceAudio(currentWord.value.sentences[2].sentenceText)
+          }
+          break
+        case 'v':
+          event.preventDefault()
+          toggleVocabularyNotebook()
           break
       }
     }
@@ -594,10 +784,12 @@ export default {
            error,
            showWordListModal,
            wordListSearchTerm,
+           showKeyboardShortcuts,
            filteredWordList,
            playAudio,
            playPhraseAudio,
            playSentenceAudio,
+           toggleVocabularyNotebook,
            nextPage,
            previousPage,
            goBack,
@@ -687,9 +879,21 @@ export default {
   line-height: 1.2;
 }
 
+.mode-title {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  display: inline-block;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
 .nav-controls {
   display: flex;
-  gap: 1vw;
+  align-items: center;
+  gap: 0.5vw;
 }
 
 .nav-btn {
@@ -732,6 +936,8 @@ export default {
 /* 左侧单词区域 - 固定宽度 */
 .word-section {
   width: 30vw;
+  min-width: 30vw;
+  max-width: 30vw;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -750,6 +956,14 @@ export default {
   justify-content: space-between;
 }
 
+.word-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1vh;
+  margin-bottom: 2vh;
+}
+
 .word-text {
   font-size: 2.5vw;
   font-weight: 800;
@@ -758,6 +972,41 @@ export default {
   margin: 0;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
   line-height: 1.2;
+}
+
+.word-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.vocab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.vocab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.vocab-btn.in-notebook {
+  background: linear-gradient(135deg, #38a169, #2f855a);
+  box-shadow: 0 2px 8px rgba(56, 161, 105, 0.3);
+}
+
+.vocab-btn.in-notebook:hover {
+  box-shadow: 0 4px 12px rgba(56, 161, 105, 0.4);
 }
 
 /* 音标区域 */
@@ -836,6 +1085,7 @@ export default {
   height: calc(100% - 2.5vh);
   overflow-y: auto;
   padding-right: 1vw;
+  padding-bottom: 1.5vh;
 }
 
 .meanings-list::-webkit-scrollbar {
@@ -869,7 +1119,7 @@ export default {
 }
 
 .meaning-left {
-  min-width: 8vw;
+  min-width: 4.8vw;
 }
 
 .meaning-pos {
@@ -1290,6 +1540,11 @@ export default {
     font-size: 2.2vw;
   }
   
+  .vocab-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
   .phonetic-text {
     font-size: 1.1vw;
   }
@@ -1333,5 +1588,135 @@ export default {
   .sentence-section {
     height: 22vh;
   }
+}
+
+/* 键盘快捷键按钮 */
+.shortcuts-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+  border: 2px solid #667eea;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shortcuts-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 键盘快捷键弹窗 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.shortcuts-modal h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.shortcuts-content {
+  margin-bottom: 20px;
+}
+
+.shortcut-section {
+  margin-bottom: 20px;
+}
+
+.shortcut-section h3 {
+  margin: 0 0 10px 0;
+  color: #667eea;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 5px;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.shortcut-item:last-child {
+  border-bottom: none;
+}
+
+.key {
+  background: #f8f9fa;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: 1px solid #dee2e6;
+  min-width: 60px;
+  text-align: center;
+}
+
+.description {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.modal-btn.primary {
+  background: #667eea;
+  color: white;
+}
+
+.modal-btn.primary:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
 }
 </style>

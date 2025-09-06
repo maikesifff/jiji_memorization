@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <div class="home-content">
          <!-- 欢迎和教材选择区域 -->
      <div class="welcome-textbook-section">
        <div class="textbook-section">
@@ -127,6 +128,7 @@
       @close="showTextbookSelector = false"
       @textbook-selected="handleTextbookSelected"
     />
+    </div>
   </div>
 </template>
 
@@ -213,8 +215,8 @@ export default {
          // 获取用户在指定单元的学习进度
      const getUserUnitProgress = async (unitId, totalWords) => {
        try {
-         // 从错误记录表查询该用户在该单元的学习数据
-         const response = await api.get(`/api/error-records/user/${authStore.currentUser.id}/unit-word/unit/${unitId}`)
+        // 从错误记录表查询该用户在该单元的学习数据
+        const response = await api.get(`/api/error-records/user/${authStore.currentUser.id}/unit/${unitId}`)
          const records = response.data
          
          // 统计已学习的单词数（答对次数大于等于1视为已完成）
@@ -259,7 +261,8 @@ export default {
     // 开始评测模式
     const startTestMode = (unit) => {
       console.log('Starting test mode for unit:', unit)
-      // TODO: 跳转到评测模式页面
+      // 跳转到评测模式页面
+      router.push(`/evaluation/${unit.id}`)
     }
     
     // 获取单元进度
@@ -313,6 +316,9 @@ export default {
     }
     
     onMounted(() => {
+      // 平滑滚动到页面顶部
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+      
       // 从 localStorage 读取上次选择的教材
       const savedTextbook = localStorage.getItem('selectedTextbook')
       if (savedTextbook) {
@@ -351,9 +357,14 @@ export default {
 
 <style scoped>
 .home {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+}
+
+.home-content {
   max-width: 1400px; /* 增加页面最大宽度 */
   margin: 0 auto;
-  padding: 40px 20px;
 }
 
 .welcome-textbook-section {

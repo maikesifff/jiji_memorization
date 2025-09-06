@@ -1,11 +1,5 @@
 <template>
   <div class="profile-container">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h1>个人资料</h1>
-      <p>管理您的个人信息和设置</p>
-    </div>
-
     <!-- 主要内容区域 -->
     <div class="profile-content">
       <!-- 左侧：头像和基本信息 -->
@@ -498,6 +492,9 @@ const loadUserStats = async () => {
 
 // 组件挂载时加载数据
 onMounted(() => {
+  // 平滑滚动到页面顶部
+  window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+  
   if (!user.value) {
     router.push('/login')
     return
@@ -518,22 +515,6 @@ onMounted(() => {
   padding: 2rem;
 }
 
-.page-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  color: white;
-}
-
-.page-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-}
-
-.page-header p {
-  font-size: 1.1rem;
-  opacity: 0.9;
-}
 
 .profile-content {
   display: grid;

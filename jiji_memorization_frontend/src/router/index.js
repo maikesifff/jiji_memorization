@@ -6,6 +6,10 @@ import Register from '@/views/Register.vue'
 import Admin from '@/views/Admin.vue'
 import BrowseMode from '@/views/BrowseMode.vue'
 import Profile from '@/views/Profile.vue'
+import Vocabulary from '@/views/Vocabulary.vue'
+import Reports from '@/views/Reports.vue'
+import Evaluation from '@/views/Evaluation.vue'
+import Settings from '@/views/Settings.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [
@@ -49,6 +53,30 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/vocabulary',
+    name: 'Vocabulary',
+    component: Vocabulary,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/reports',
+    name: 'Reports',
+    component: Reports,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/evaluation/:unitId',
+    name: 'Evaluation',
+    component: Evaluation,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
     meta: { requiresAuth: true }
   }
 ]
