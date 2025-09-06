@@ -89,104 +89,13 @@
           </div>
         </div>
 
-        <!-- 时间限制 -->
-        <div class="setting-item">
-          <div class="setting-info">
-            <h3>时间限制</h3>
-            <p>每道题的答题时间限制（0表示无限制）</p>
-          </div>
-          <div class="setting-control">
-            <select v-model="evaluationSettings.timeLimit" @change="updateSettings">
-              <option value="0">无限制</option>
-              <option value="10">10秒</option>
-              <option value="15">15秒</option>
-              <option value="20">20秒</option>
-              <option value="30">30秒</option>
-              <option value="60">60秒</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- 显示提示 -->
-        <div class="setting-item">
-          <div class="setting-info">
-            <h3>显示提示</h3>
-            <p>在答题时显示相关提示</p>
-          </div>
-          <div class="setting-control">
-            <label class="switch">
-              <input 
-                type="checkbox" 
-                v-model="evaluationSettings.showHints"
-                @change="updateSettings"
-              >
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
       </div>
 
-      <!-- 界面设置 -->
-      <div class="settings-section">
-        <h2>界面设置</h2>
-        
-        <!-- 主题 -->
-        <div class="setting-item">
-          <div class="setting-info">
-            <h3>主题</h3>
-            <p>选择应用的主题样式</p>
-          </div>
-          <div class="setting-control">
-            <div class="theme-selection">
-              <label class="theme-option">
-                <input 
-                  type="radio" 
-                  value="light"
-                  v-model="uiSettings.theme"
-                  @change="updateSettings"
-                >
-                <div class="theme-preview light">
-                  <span>浅色主题</span>
-                </div>
-              </label>
-              <label class="theme-option">
-                <input 
-                  type="radio" 
-                  value="dark"
-                  v-model="uiSettings.theme"
-                  @change="updateSettings"
-                >
-                <div class="theme-preview dark">
-                  <span>深色主题</span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- 字体大小 -->
-        <div class="setting-item">
-          <div class="setting-info">
-            <h3>字体大小</h3>
-            <p>调整界面字体大小</p>
-          </div>
-          <div class="setting-control">
-            <select v-model="uiSettings.fontSize" @change="updateSettings">
-              <option value="small">小</option>
-              <option value="medium">中</option>
-              <option value="large">大</option>
-            </select>
-          </div>
-        </div>
-
-      </div>
 
 
       <!-- 操作按钮 -->
       <div class="settings-actions">
         <button @click="resetSettings" class="reset-btn">重置设置</button>
-        <button @click="exportSettings" class="export-btn">导出设置</button>
-        <button @click="importSettings" class="import-btn">导入设置</button>
       </div>
     </div>
   </div>
@@ -221,59 +130,6 @@ const resetSettings = () => {
   }
 }
 
-// 导出设置
-const exportSettings = () => {
-  const settings = {
-    evaluation: evaluationSettings.value,
-    ui: uiSettings.value,
-    learning: learningSettings.value
-  }
-  
-  const dataStr = JSON.stringify(settings, null, 2)
-  const dataBlob = new Blob([dataStr], { type: 'application/json' })
-  
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(dataBlob)
-  link.download = 'settings.json'
-  link.click()
-}
-
-// 导入设置
-const importSettings = () => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.json'
-  
-  input.onchange = (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        try {
-          const settings = JSON.parse(e.target.result)
-          
-          if (settings.evaluation) {
-            settingsStore.updateEvaluationSettings(settings.evaluation)
-          }
-          if (settings.ui) {
-            settingsStore.updateUISettings(settings.ui)
-          }
-          if (settings.learning) {
-            settingsStore.updateLearningSettings(settings.learning)
-          }
-          
-          loadSettings()
-          alert('设置导入成功！')
-        } catch (error) {
-          alert('导入失败：文件格式不正确')
-        }
-      }
-      reader.readAsText(file)
-    }
-  }
-  
-  input.click()
-}
 
 // 加载设置
 const loadSettings = () => {
@@ -487,122 +343,6 @@ select:focus {
   color: #666;
 }
 
-/* 难度选择 */
-.difficulty-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.difficulty-option {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.difficulty-option:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
-}
-
-.difficulty-option input[type="radio"]:checked + .difficulty-info {
-  color: #667eea;
-}
-
-.difficulty-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.difficulty-name {
-  font-weight: 600;
-  color: #333;
-}
-
-.difficulty-desc {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-/* 主题选择 */
-.theme-selection {
-  display: flex;
-  gap: 1rem;
-}
-
-.theme-option {
-  cursor: pointer;
-}
-
-.theme-preview {
-  padding: 1rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.theme-preview.light {
-  background: #f8f9fa;
-  color: #333;
-}
-
-.theme-preview.dark {
-  background: #2d3748;
-  color: white;
-}
-
-.theme-option input[type="radio"]:checked + .theme-preview {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-}
-
-/* 学习模式选择 */
-.learning-mode-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.learning-mode-option {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.learning-mode-option:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
-}
-
-.learning-mode-option input[type="radio"]:checked + .learning-mode-info {
-  color: #667eea;
-}
-
-.learning-mode-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.learning-mode-name {
-  font-weight: 600;
-  color: #333;
-}
-
-.learning-mode-desc {
-  font-size: 0.8rem;
-  color: #666;
-}
 
 /* 操作按钮 */
 .settings-actions {
@@ -612,35 +352,18 @@ select:focus {
   padding: 2rem 0;
 }
 
-.reset-btn,
-.export-btn,
-.import-btn {
+.reset-btn {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-.reset-btn {
   background: #f44336;
   color: white;
 }
 
-.export-btn {
-  background: #4caf50;
-  color: white;
-}
-
-.import-btn {
-  background: #2196f3;
-  color: white;
-}
-
-.reset-btn:hover,
-.export-btn:hover,
-.import-btn:hover {
+.reset-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -658,14 +381,6 @@ select:focus {
   
   .setting-info {
     margin-right: 0;
-  }
-  
-  .theme-selection {
-    flex-direction: column;
-  }
-  
-  .settings-actions {
-    flex-direction: column;
   }
 }
 </style>
