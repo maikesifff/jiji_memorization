@@ -373,30 +373,6 @@
               <span class="key">空格/回车</span>
               <span class="description">下一题</span>
             </div>
-          </div>
-          
-          <div class="shortcut-section">
-            <h3>选择题模式</h3>
-            <div class="shortcut-item">
-              <span class="key">1-4</span>
-              <span class="description">选择对应选项</span>
-            </div>
-            <div class="shortcut-item">
-              <span class="key">空格/回车</span>
-              <span class="description">标记为"不会"</span>
-            </div>
-          </div>
-          
-          <div class="shortcut-section">
-            <h3>听音默写模式</h3>
-            <div class="shortcut-item">
-              <span class="key">回车</span>
-              <span class="description">提交答案</span>
-            </div>
-          </div>
-          
-          <div class="shortcut-section">
-            <h3>发音快捷键（答题后）</h3>
             <div class="shortcut-item">
               <span class="key">Q</span>
               <span class="description">美式发音</span>
@@ -420,12 +396,29 @@
           </div>
           
           <div class="shortcut-section">
-            <h3>所有模式</h3>
+            <h3>选择模式</h3>
+            <div class="shortcut-item">
+              <span class="key">1-4</span>
+              <span class="description">选择对应选项</span>
+            </div>
             <div class="shortcut-item">
               <span class="key">空格/回车</span>
-              <span class="description">进入下一题（显示结果后）</span>
+              <span class="description">标记为"不会"</span>
             </div>
           </div>
+          
+          <div class="shortcut-section">
+            <h3>听写模式</h3>
+            <div class="shortcut-item">
+              <span class="key">回车</span>
+              <span class="description">提交答案</span>
+            </div>
+            <div class="shortcut-item">
+              <span class="key">空格</span>
+              <span class="description">标记为"不会"</span>
+            </div>
+          </div>
+          
         </div>
         <div class="modal-actions">
           <button @click="showKeyboardShortcuts = false" class="modal-btn primary">知道了</button>
@@ -1178,6 +1171,11 @@ const skipQuestion = () => {
   // 记录答题结果到后端（跳过算答错）
   recordAnswer(false)
   
+  // 如果设置了答错自动加入生词本
+  if (settingsStore.evaluationSettings.autoAddToNotebook) {
+    addToNotebook()
+  }
+  
   // 自动播放发音（如果设置了）
   if (settingsStore.evaluationSettings.autoPlayAudio && 
       (currentMode.value === 'word-to-meaning' || currentMode.value === 'meaning-to-word')) {
@@ -1237,6 +1235,16 @@ const addToNotebook = async () => {
       userId: authStore.currentUser.id,
       wordId: currentWord.value.wordId
     })
+    
+    // 更新本地状态
+    currentWord.value.isInNotebook = true
+    
+    // 更新wordList数组中的对应项
+    const wordIndex = wordList.value.findIndex(w => w.wordId === currentWord.value.wordId)
+    if (wordIndex !== -1) {
+      wordList.value[wordIndex].isInNotebook = true
+    }
+    
     console.log('已自动添加到生词本')
   } catch (error) {
     // 忽略"该单词已在生词本中"的错误

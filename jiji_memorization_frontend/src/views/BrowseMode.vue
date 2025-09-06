@@ -216,15 +216,11 @@
        <h2>键盘快捷键</h2>
        <div class="shortcuts-content">
          <div class="shortcut-section">
-           <h3>通用快捷键</h3>
+           <h3>浏览学习</h3>
            <div class="shortcut-item">
              <span class="key">ESC</span>
              <span class="description">返回主页</span>
            </div>
-         </div>
-         
-         <div class="shortcut-section">
-           <h3>浏览学习</h3>
            <div class="shortcut-item">
              <span class="key">A / ←</span>
              <span class="description">上一页</span>
