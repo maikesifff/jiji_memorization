@@ -827,7 +827,7 @@ const loadCurrentQuestion = async () => {
     
     // 如果用户已经交互过，立即自动播放美音
     if (settingsStore.evaluationSettings.autoPlayAudio && hasUserInteracted.value) {
-      playAudio('american')
+      playAudio(getDefaultPronunciationType())
     }
   } else {
     canSubmitAnswer.value = true // 其他模式立即可以操作
@@ -868,7 +868,7 @@ const selectOption = (index) => {
   // 自动播放发音（如果设置了）
   if (settingsStore.evaluationSettings.autoPlayAudio && 
       (currentMode.value === 'word-to-meaning' || currentMode.value === 'meaning-to-word')) {
-    playAudio('american')
+    playAudio(getDefaultPronunciationType())
   }
 }
 
@@ -905,11 +905,20 @@ const submitAnswer = () => {
   
   // 自动播放发音（如果设置了）
   if (settingsStore.evaluationSettings.autoPlayAudio && currentMode.value === 'audio-to-word') {
-    playAudio('american')
+    playAudio(getDefaultPronunciationType())
   }
 }
 
 // 播放音频
+// 根据设置获取默认发音类型
+const getDefaultPronunciationType = () => {
+  const setting = settingsStore.evaluationSettings.defaultPronunciation
+  if (setting === 'random') {
+    return Math.random() < 0.5 ? 'american' : 'british'
+  }
+  return setting
+}
+
 const playAudio = async (type) => {
   console.log(`playAudio called with type: ${type}`)
   try {
@@ -982,7 +991,7 @@ const playAudio = async (type) => {
 
 const playQuestionAudio = () => {
   hasUserInteracted.value = true // 标记用户已交互
-  playAudio('american')
+  playAudio(getDefaultPronunciationType())
 }
 
 const playPhraseAudio = (phraseText) => {
@@ -1179,7 +1188,7 @@ const skipQuestion = () => {
   // 自动播放发音（如果设置了）
   if (settingsStore.evaluationSettings.autoPlayAudio && 
       (currentMode.value === 'word-to-meaning' || currentMode.value === 'meaning-to-word')) {
-    playAudio('american')
+    playAudio(getDefaultPronunciationType())
   }
   
   totalAnswered.value++

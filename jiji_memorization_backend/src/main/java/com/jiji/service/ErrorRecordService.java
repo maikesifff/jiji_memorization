@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -140,5 +139,10 @@ public class ErrorRecordService {
     public void deleteAllUserRecords(Long userId) {
         errorRecordRepository.findByUserId(userId)
                 .forEach(errorRecordRepository::delete);
+    }
+    
+    // 删除用户在指定单元的所有答题记录
+    public void deleteUserUnitRecords(Long userId, Long unitId) {
+        errorRecordRepository.deleteByUserIdAndUnitId(userId, unitId);
     }
 }

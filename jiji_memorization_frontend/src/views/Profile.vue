@@ -311,7 +311,6 @@ const handleAvatarUpload = async (event) => {
       authStore.currentUser.avatar = uploadResponse.data.avatarPath
       // 更新localStorage中的用户信息
       authStore.setUser(authStore.currentUser)
-      alert('头像上传成功！')
     } else {
       alert('头像上传失败: ' + uploadResponse.data.message)
     }
@@ -400,7 +399,6 @@ const updateProfile = async () => {
       authStore.setUser(authStore.currentUser)
       
       isEditing.value = false
-      alert('资料更新成功！')
     } else {
       alert('资料更新失败: ' + response.data.message)
     }

@@ -154,4 +154,24 @@ public class ErrorRecordController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+    
+    // 删除用户在指定单元的所有答题记录
+    @DeleteMapping("/user/{userId}/unit/{unitId}")
+    public ResponseEntity<Map<String, Object>> deleteUserUnitRecords(@PathVariable Long userId, @PathVariable Long unitId) {
+        try {
+            errorRecordService.deleteUserUnitRecords(userId, unitId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "单元学习记录已清空");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "error");
+            response.put("message", "清空学习记录失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 }

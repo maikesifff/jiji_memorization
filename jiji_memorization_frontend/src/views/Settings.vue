@@ -71,6 +71,21 @@
           </div>
         </div>
 
+        <!-- 默认发音类型 -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <h3>默认发音类型</h3>
+            <p>自动发音时播放的音标类型</p>
+          </div>
+          <div class="setting-control">
+            <select v-model="evaluationSettings.defaultPronunciation" @change="updateSettings">
+              <option value="american">美式发音</option>
+              <option value="british">英式发音</option>
+              <option value="random">随机</option>
+            </select>
+          </div>
+        </div>
+
         <!-- 答错自动加入生词本 -->
         <div class="setting-item">
           <div class="setting-info">
@@ -304,19 +319,22 @@ select:focus {
 /* 题型选择 */
 .mode-selection {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .mode-option {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
   border: 2px solid #e1e5e9;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex: 1;
+  min-width: 200px;
 }
 
 .mode-option:hover {
@@ -331,6 +349,7 @@ select:focus {
 .mode-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .mode-name {
@@ -381,6 +400,14 @@ select:focus {
   
   .setting-info {
     margin-right: 0;
+  }
+  
+  .mode-selection {
+    flex-direction: column;
+  }
+  
+  .mode-option {
+    min-width: auto;
   }
 }
 </style>

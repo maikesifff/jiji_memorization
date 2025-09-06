@@ -6,7 +6,7 @@
        <div class="textbook-section">
          <!-- 欢迎文字区域 -->
          <div class="welcome-section">
-           <h1>欢迎回来，{{ authStore.currentUser?.username }}！</h1>
+           <h1>欢迎回来，{{ authStore.currentUser?.nickname || authStore.currentUser?.username }}！</h1>
            <p>开始你的吉吉记单词之旅吧</p>
          </div>
          
@@ -63,6 +63,14 @@
                   <div class="progress-text">
                     {{ getUnitProgressText(unit) }}
                   </div>
+                  <button 
+                    v-if="unit.learnedWords || unit.errorCount"
+                    @click="clearUnitProgress(unit)" 
+                    class="clear-icon-btn"
+                    title="清空该单元的学习记录"
+                  >
+                    🗑️
+                  </button>
                 </div>
                 
                                  <div class="unit-stats">
@@ -101,23 +109,23 @@
     
     <!-- 快速统计 -->
     <div class="quick-stats">
-      <h2>学习概览</h2>
+      <h2>教材概览</h2>
       <div class="stats-grid">
         <div class="stat-item">
-          <div class="stat-number">{{ totalUnits }}</div>
-          <div class="stat-label">总单元数</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number">{{ completedUnits }}</div>
-          <div class="stat-label">已完成单元</div>
-        </div>
-        <div class="stat-item">
           <div class="stat-number">{{ totalWords }}</div>
-          <div class="stat-label">总单词数</div>
+          <div class="stat-label">教材单词数</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">{{ overallProgress }}%</div>
-          <div class="stat-label">总体进度</div>
+          <div class="stat-number">{{ learnedWords }}</div>
+          <div class="stat-label">在学单词数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">{{ totalErrors }}</div>
+          <div class="stat-label">总错误次数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">{{ errorRate }}%</div>
+          <div class="stat-label">平均错误率</div>
         </div>
       </div>
     </div>
@@ -154,16 +162,18 @@ export default {
     
     // 计算属性
     const totalUnits = computed(() => units.value.length)
-    const completedUnits = computed(() => 
-      units.value.filter(unit => getUnitProgress(unit) === 100).length
+    const learnedWords = computed(() => 
+      units.value.reduce((sum, unit) => sum + (unit.learnedWords || 0), 0)
     )
     const totalWords = computed(() => 
       units.value.reduce((sum, unit) => sum + (unit.totalWords || 0), 0)
     )
-    const overallProgress = computed(() => {
-      if (totalWords.value === 0) return 0
-      const learnedWords = units.value.reduce((sum, unit) => sum + (unit.learnedWords || 0), 0)
-      return Math.round((learnedWords / totalWords.value) * 100)
+    const totalErrors = computed(() => 
+      units.value.reduce((sum, unit) => sum + (unit.errorCount || 0), 0)
+    )
+    const errorRate = computed(() => {
+      if (learnedWords.value === 0) return 0
+      return Math.round((totalErrors.value / learnedWords.value) * 100)
     })
     
     // 获取单元列表
@@ -265,6 +275,28 @@ export default {
       router.push(`/evaluation/${unit.id}`)
     }
     
+    // 清空单元学习记录
+    const clearUnitProgress = async (unit) => {
+      if (!confirm(`确定要清空单元"${unit.name}"的学习记录吗？此操作不可撤销。`)) {
+        return
+      }
+      
+      try {
+        await api.delete(`/api/error-records/user/${authStore.currentUser.id}/unit/${unit.id}`)
+        
+        // 更新本地数据
+        unit.learnedWords = 0
+        unit.errorCount = 0
+        
+        // 重新获取单元数据以更新统计
+        await fetchUnits()
+        
+      } catch (error) {
+        console.error('Failed to clear unit progress:', error)
+        alert('清空学习记录失败，请重试')
+      }
+    }
+    
     // 获取单元进度
     const getUnitProgress = (unit) => {
       if (!unit.totalWords || unit.totalWords === 0) return 0
@@ -338,13 +370,14 @@ export default {
       currentTextbook,
       units,
       loading,
-      totalUnits,
-      completedUnits,
+      learnedWords,
       totalWords,
-      overallProgress,
+      totalErrors,
+      errorRate,
       handleTextbookSelected,
       startBrowseMode,
       startTestMode,
+      clearUnitProgress,
              getUnitProgress,
        getUnitProgressText,
        getUnitAccuracy,
@@ -504,6 +537,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center; /* 垂直居中 */
+  position: relative; /* 为绝对定位的垃圾桶按钮提供定位基准 */
 }
 
 .unit-header h3 {
@@ -546,6 +580,7 @@ export default {
 .unit-progress {
   margin-bottom: 0;
   flex-shrink: 0; /* 防止进度条被压缩 */
+  position: relative; /* 为绝对定位的垃圾桶按钮提供定位基准 */
 }
 
 .progress-bar {
@@ -721,6 +756,41 @@ export default {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
 }
+
+/* 垃圾桶图标按钮样式 */
+.clear-icon-btn {
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 9px;
+  padding: 0;
+  position: absolute;
+  top: -18px; /* 再往上挪一个相同的距离 */
+  right: 0;
+  z-index: 1;
+  opacity: 0; /* 默认隐藏 */
+  visibility: hidden;
+}
+
+.unit-card:hover .clear-icon-btn {
+  opacity: 1; /* 悬停时显示 */
+  visibility: visible;
+}
+
+.clear-icon-btn:hover {
+  background: #ff3742;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+}
 </style>
+
 
 

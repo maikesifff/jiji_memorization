@@ -11,6 +11,9 @@ export const useSettingsStore = defineStore('settings', () => {
     // 自动发音
     autoPlayAudio: true,
     
+    // 默认发音类型
+    defaultPronunciation: 'american', // american, british, random
+    
     // 答错自动加入生词本
     autoAddToNotebook: true,
     
@@ -109,6 +112,7 @@ export const useSettingsStore = defineStore('settings', () => {
       freeChoiceMode: false,
       selectedModes: ['meaning-to-word', 'word-to-meaning', 'audio-to-word'],
       autoPlayAudio: true,
+      defaultPronunciation: 'american',
       autoAddToNotebook: true,
       timeLimit: 0,
       showHints: true,

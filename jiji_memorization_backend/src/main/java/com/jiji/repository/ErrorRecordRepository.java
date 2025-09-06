@@ -2,6 +2,7 @@ package com.jiji.repository;
 
 import com.jiji.entity.ErrorRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -56,4 +57,11 @@ public interface ErrorRecordRepository extends JpaRepository<ErrorRecord, Long> 
     @Query("SELECT CASE WHEN COUNT(er) > 0 THEN true ELSE false END FROM ErrorRecord er " +
            "WHERE er.userId = :userId AND er.unitWordId = :unitWordId AND er.errorCount > 0")
     boolean isWordIncorrectByUser(@Param("userId") Long userId, @Param("unitWordId") Long unitWordId);
+    
+    // 删除用户在指定单元的所有答题记录
+    @Modifying
+    @Query("DELETE FROM ErrorRecord er " +
+           "WHERE er.userId = :userId AND er.unitWordId IN " +
+           "(SELECT uw.id FROM UnitWord uw WHERE uw.unitId = :unitId)")
+    void deleteByUserIdAndUnitId(@Param("userId") Long userId, @Param("unitId") Long unitId);
 }
